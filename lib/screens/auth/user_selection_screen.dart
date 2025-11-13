@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/blood_bank/blood_bank_page.dart';
-import 'package:jeevandhara/screens/donor/donor_page.dart';
-import 'package:jeevandhara/screens/hospital/hospital_page.dart';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
+import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
+import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
 import 'package:jeevandhara/screens/main_screen.dart';
 
 class UserSelectionScreen extends StatelessWidget {
@@ -10,27 +10,29 @@ class UserSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'Select your role',
+              'Select Your Role',
               style: TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
-                color: Colors.black54,
+                color: Color(0xFF333333),
               ),
             ),
             const SizedBox(height: 40.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              spacing: 20.0,
+              runSpacing: 20.0,
+              alignment: WrapAlignment.center,
               children: <Widget>[
                 _buildRoleButton(context, 'assets/images/Requester_logo.png', 'Requester', const MainScreen()),
-                _buildRoleButton(context, 'assets/images/Donor_logo.png', 'Donor', const DonorPage()),
-                _buildRoleButton(context, 'assets/images/Hospital_logo.png', 'Hospital', const HospitalPage()),
-                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', 'Blood Bank', const BloodBankPage()),
+                _buildRoleButton(context, 'assets/images/Donor_logo.png', 'Donor', const DonorMainScreen()),
+                _buildRoleButton(context, 'assets/images/Hospital_logo.png', 'Hospital', const HospitalMainScreen()),
+                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', 'Blood Bank', const BloodBankMainScreen()),
               ],
             ),
           ],
@@ -45,26 +47,37 @@ class UserSelectionScreen extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Container(
+            width: 120,
+            height: 110,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.0),
+              color: isSelected ? const Color(0xFFD32F2F).withOpacity(0.05) : Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
               border: Border.all(
-                color: isSelected ? Colors.red : Colors.grey[300]!,
-                width: 2.0,
+                color: isSelected ? const Color(0xFFD32F2F).withOpacity(0.8) : Colors.grey.shade200,
+                width: 1.5,
               ),
-              color: isSelected ? Colors.red.withOpacity(0.1) : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.all(16.0),
-            child: Image.asset(
-              imagePath,
-              height: 40.0,
+            child: Center(
+              child: Image.asset(
+                imagePath,
+                height: 50.0,
+              ),
             ),
           ),
-          const SizedBox(height: 8.0),
+          const SizedBox(height: 12.0),
           Text(
             role,
             style: TextStyle(
-              color: isSelected ? Colors.red : Colors.black54,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+              color: isSelected ? const Color(0xFFD32F2F) : const Color(0xFF333333),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             ),
           ),
         ],

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/requester/requester_blood_bank_screen.dart';
-import 'package:jeevandhara/screens/user/emergency_delivery_screen.dart';
-import 'package:jeevandhara/screens/user/find_donor_screen.dart';
-import 'package:jeevandhara/screens/user/post_blood_request_screen.dart';
+import 'package:jeevandhara/screens/requester/requester_emergency_delivery_screen.dart';
+import 'package:jeevandhara/screens/requester/requester_find_donor_screen.dart';
+import 'package:jeevandhara/screens/requester/requester_post_blood_request_screen.dart';
 
-class RequesterPage extends StatefulWidget {
-  const RequesterPage({super.key});
+class RequesterHomePage extends StatefulWidget {
+  const RequesterHomePage({super.key});
 
   @override
-  State<RequesterPage> createState() => _RequesterPageState();
+  State<RequesterHomePage> createState() => _RequesterHomePageState();
 }
 
-class _RequesterPageState extends State<RequesterPage> {
+class _RequesterHomePageState extends State<RequesterHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,7 +123,7 @@ class _RequesterPageState extends State<RequesterPage> {
               textColor: Colors.white,
               backgroundColor: const Color(0xFFD32F2F),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const PostBloodRequestScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterPostBloodRequestScreen()));
               }),
           _buildFeatureCard(
               title: 'Find Donor',
@@ -133,7 +133,7 @@ class _RequesterPageState extends State<RequesterPage> {
               textColor: Colors.black87,
               backgroundColor: const Color(0xFFFFF5F5),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const FindDonorScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterFindDonorScreen()));
               }),
           _buildFeatureCard(
               title: 'Nearby Blood Banks',
@@ -153,7 +153,7 @@ class _RequesterPageState extends State<RequesterPage> {
               textColor: Colors.white,
               backgroundColor: const Color(0xFFC62828),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const EmergencyDeliveryScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterEmergencyDeliveryScreen()));
               }),
         ],
       ),

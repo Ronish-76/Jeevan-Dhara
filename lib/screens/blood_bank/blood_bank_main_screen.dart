@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/requester/requester_alerts_screen.dart';
-import 'package:jeevandhara/screens/requester/requester_find_donor_screen.dart';
-import 'package:jeevandhara/screens/requester/requester_home_page.dart';
-import 'package:jeevandhara/screens/requester/requester_profile_screen.dart';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_alerts_page.dart';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_home_page.dart';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_profile_page.dart';
+import 'package:jeevandhara/screens/blood_bank/track_requests_page.dart';
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class BloodBankMainScreen extends StatefulWidget {
+  const BloodBankMainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<BloodBankMainScreen> createState() => _BloodBankMainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _BloodBankMainScreenState extends State<BloodBankMainScreen> {
   int _selectedIndex = 0;
 
   static const List<Widget> _widgetOptions = <Widget>[
-    RequesterHomePage(),
-    RequesterFindDonorScreen(),
-    RequesterAlertsScreen(),
-    RequesterProfileScreen(),
+    BloodBankHomePage(),
+    TrackRequestsPage(),
+    BloodBankAlertsPage(),
+    BloodBankProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -46,7 +46,7 @@ class _MainScreenState extends State<MainScreen> {
             type: BottomNavigationBarType.fixed,
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+              BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: 'Requests'),
               BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: 'Alerts'),
               BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
             ],
