@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
-import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
-import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
-import 'package:jeevandhara/screens/main_screen.dart';
+import 'package:jeevandhara/screens/auth/blood_bank_registration_screen.dart';
+import 'package:jeevandhara/screens/auth/donor_registration_screen.dart';
+import 'package:jeevandhara/screens/auth/hospital_registration_screen.dart';
+import 'package:jeevandhara/screens/auth/requester_registration_screen.dart';
 
 class UserSelectionScreen extends StatelessWidget {
   const UserSelectionScreen({super.key});
@@ -16,7 +16,7 @@ class UserSelectionScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'Select Your Role',
+              'Register as :',
               style: TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
@@ -29,10 +29,10 @@ class UserSelectionScreen extends StatelessWidget {
               runSpacing: 20.0,
               alignment: WrapAlignment.center,
               children: <Widget>[
-                _buildRoleButton(context, 'assets/images/Requester_logo.png', 'Requester', const MainScreen()),
-                _buildRoleButton(context, 'assets/images/Donor_logo.png', 'Donor', const DonorMainScreen()),
-                _buildRoleButton(context, 'assets/images/Hospital_logo.png', 'Hospital', const HospitalMainScreen()),
-                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', 'Blood Bank', const BloodBankMainScreen()),
+                _buildRoleButton(context, 'assets/images/Requester_logo.png', 'Requester', const RequesterRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Donor_logo.png', 'Donor', const DonorRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Hospital_logo.png', 'Hospital', const HospitalRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', 'Blood Bank', const BloodBankRegistrationScreen()),
               ],
             ),
           ],
@@ -43,7 +43,9 @@ class UserSelectionScreen extends StatelessWidget {
 
   Widget _buildRoleButton(BuildContext context, String imagePath, String role, Widget page, {bool isSelected = false}) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)),
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+      },
       child: Column(
         children: <Widget>[
           Container(
