@@ -71,33 +71,33 @@ JeevanDhara is a mobile application designed to streamline blood donation, emerg
 ## Project Structure
 
 ### Flutter (Frontend)
-JeevanDhara/
-└── lib/
-├── main.dart
-├── routes/
-├── models/
-├── screens/
-│ ├── auth/
-│ ├── requester/
-│ ├── donor/
-│ ├── hospital/
-│ ├── bloodbank/
-├── providers/
-├── services/
-└── widgets/
-assets/
-├── icons/
-├── images/
+  JeevanDhara/
+  └── lib/
+  ├── main.dart
+  ├── routes/
+  ├── models/
+  ├── screens/
+  │ ├── auth/
+  │ ├── requester/
+  │ ├── donor/
+  │ ├── hospital/
+  │ ├── bloodbank/
+  ├── providers/
+  ├── services/
+  └── widgets/
+  assets/
+  ├── icons/
+  ├── images/
 ### Backend (Node.js)
 backend/
-├── src/
-│ ├── config/
-│ ├── controllers/
-│ ├── routes/
-│ ├── middlewares/
-│ ├── models/
-│ └── utils/
-├── server.js
+  ├── src/
+  │ ├── config/
+  │ ├── controllers/
+  │ ├── routes/
+  │ ├── middlewares/
+  │ ├── models/
+  │ └── utils/
+  ├── server.js
 
 ### MongoDB Collections
 - users
