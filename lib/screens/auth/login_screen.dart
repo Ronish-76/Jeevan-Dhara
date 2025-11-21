@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/screens/auth/forgot_password_screen.dart';
 import 'package:jeevandhara/screens/auth/user_selection_screen.dart';
 import 'package:jeevandhara/screens/main_screen.dart';
 import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
-import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
-import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,34 +26,42 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      String email = _emailController.text;
-      String password = _passwordController.text;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final success = await authProvider.login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-      if (email == 'user' && password == 'user') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      } else if (email == 'donor' && password == 'donor') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DonorMainScreen()),
-        );
-      } else if (email == 'hospital' && password == 'hospital') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HospitalMainScreen()),
-        );
-      } else if (email == 'bank' && password == 'bank') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BloodBankMainScreen()),
-        );
+      if (!mounted) return;
+
+      if (success) {
+        final user = authProvider.user;
+        if (user != null) {
+          if (user.userType == 'requester') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
+          } else if (user.userType == 'donor') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DonorMainScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Unknown user type')),
+            );
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid email or password')),
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -61,6 +69,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = Provider.of<AuthProvider>(context).isLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
@@ -70,10 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32.0),
-              Image.asset(
-                'assets/images/jeevan_dhara_logo.png',
-                height: 100.0,
-              ),
+              Image.asset('assets/images/jeevan_dhara_logo.png', height: 100.0),
               const SizedBox(height: 16.0),
               const Text(
                 'Jeevan Dhara',
@@ -114,11 +121,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
-                          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE0E0E0),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
-                          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD32F2F),
+                          ),
                         ),
                       ),
                       validator: (value) {
@@ -138,7 +149,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                            _passwordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() {
@@ -148,11 +161,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
-                          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE0E0E0),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
-                          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD32F2F),
+                          ),
                         ),
                       ),
                       validator: (value) {
@@ -169,7 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ForgotPasswordScreen(),
+                            ),
                           );
                         },
                         child: const Text(
@@ -184,23 +204,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 32.0),
                     ElevatedButton(
-                      onPressed: _login,
+                      onPressed: isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD32F2F),
+                        disabledBackgroundColor: const Color(0xFFD32F2F).withOpacity(0.6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                       ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Login',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -221,7 +251,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const UserSelectionScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const UserSelectionScreen(),
+                        ),
                       );
                     },
                     child: const Text(

@@ -1,10 +1,21 @@
 import 'dart:async';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/auth/login_screen.dart';
+import 'package:jeevandhara/screens/main_screen.dart';
+import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -35,13 +46,45 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(
-      const Duration(seconds: 2),
-      () => Navigator.pushReplacement(
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Artificial delay for splash screen
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (!mounted) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.tryAutoLogin();
+
+    if (!mounted) return;
+
+    if (authProvider.isAuthenticated) {
+      final user = authProvider.user;
+      if (user?.userType == 'requester') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      } else if (user?.userType == 'donor') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DonorMainScreen()),
+        );
+      } else {
+        // Fallback to login if user type is unknown
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    } else {
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
-      ),
-    );
+      );
+    }
   }
 
   @override

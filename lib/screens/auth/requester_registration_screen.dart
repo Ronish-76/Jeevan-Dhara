@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 
 class RequesterRegistrationScreen extends StatefulWidget {
   const RequesterRegistrationScreen({super.key});
@@ -25,7 +28,6 @@ class _RequesterRegistrationScreenState
   final _ageController = TextEditingController();
   final _hospitalController = TextEditingController();
   String? _gender;
-  DateTime? _dateOfBirth;
 
   // Step 2 Controllers & Variables
   String? _bloodGroup;
@@ -51,6 +53,12 @@ class _RequesterRegistrationScreenState
 
   void _nextPage() {
     if (_step1FormKey.currentState!.validate()) {
+      if (_gender == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Please select a gender')));
+        return;
+      }
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -65,30 +73,51 @@ class _RequesterRegistrationScreenState
     );
   }
 
-  void _completeRegistration() {
-    if (_step2FormKey.currentState!.validate()) {
-      // Registration logic here
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration Complete!')),
-      );
-      Navigator.of(context).pop();
+  Future<void> _registerUser() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final success = await authProvider.register({
+        'fullName': _nameController.text,
+        'email': _emailController.text,
+        'phone': _phoneController.text,
+        'location': _locationController.text,
+        'age': int.tryParse(_ageController.text),
+        'hospitalName': _hospitalController.text,
+        'gender': _gender,
+        'bloodGroup': _bloodGroup,
+        'isEmergency': _isEmergency,
+        'password': _passwordController.text,
+        'userType': 'requester',
+      });
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration Successful!')),
+        );
+        // Navigate to main screen or close registration
+        Navigator.of(context).pop(); 
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to register: ${authProvider.errorMessage}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _dateOfBirth ?? DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _dateOfBirth) {
-      setState(() {
-        _dateOfBirth = picked;
-      });
+  void _completeRegistration() {
+    if (_step2FormKey.currentState!.validate()) {
+      _registerUser();
     }
   }
-  
+
   Widget _buildTextFormField({
     required TextEditingController controller,
     required String label,
@@ -105,10 +134,8 @@ class _RequesterRegistrationScreenState
       decoration: InputDecoration(
         labelText: label,
         hintText: hint ?? 'Enter your $label',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
+        border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
         ),
         suffixIcon: suffixIcon,
       ),
@@ -125,7 +152,10 @@ class _RequesterRegistrationScreenState
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text('Requester Registration', style: TextStyle(color: Colors.black, fontFamily: 'Poppins')),
+        title: Text(
+          'Requester Registration',
+          style: TextStyle(color: Colors.black, fontFamily: 'Poppins'),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.black),
@@ -135,28 +165,40 @@ class _RequesterRegistrationScreenState
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Text('Jeevan Dhara',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFD32F2F))),
-              SizedBox(height: 8),
-              Text(pageTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      color: Color(0xFF666666))),
-              SizedBox(height: 24),
+              Text(
+                'Jeevan Dhara',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFD32F2F),
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                pageTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Color(0xFF666666),
+                ),
+              ),
+              SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Step ${_currentPage + 1} of 2', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                  Text(
+                    'Step ${_currentPage + 1} of 2',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 4),
@@ -188,36 +230,122 @@ class _RequesterRegistrationScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Personal Details', style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.w600)),
-            SizedBox(height: 16),
-            _buildTextFormField(controller: _nameController, label: 'Full Name', validator: (v) => v!.isEmpty ? 'Name is required' : null),
-            SizedBox(height: 16),
-            _buildTextFormField(controller: _emailController, label: 'Email Address', keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty || !v.contains('@') ? 'A valid email is required' : null),
-            SizedBox(height: 16),
-            _buildTextFormField(controller: _phoneController, label: 'Phone Number', keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Phone number is required' : null),
-            SizedBox(height: 16),
-            _buildTextFormField(controller: _locationController, label: 'Location', validator: (v) => v!.isEmpty ? 'Location is required' : null),
-             SizedBox(height: 16),
-            _buildTextFormField(controller: _ageController, label: 'Age', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Age is required' : null),
-            SizedBox(height: 16),
-             Text('Gender', style: Theme.of(context).textTheme.bodyLarge),
-            Row(children: [
-              Radio<String>(value: 'Male', groupValue: _gender, onChanged: (v) => setState(() => _gender = v)), Text('Male'),
-              Radio<String>(value: 'Female', groupValue: _gender, onChanged: (v) => setState(() => _gender = v)), Text('Female'),
-              Radio<String>(value: 'Other', groupValue: _gender, onChanged: (v) => setState(() => _gender = v)), Text('Other'),
-            ]),
-            SizedBox(height: 16),
-            ListTile(
-              title: Text(_dateOfBirth == null ? 'Select Date of Birth' : 'DOB: ${_dateOfBirth!.toLocal()}'.split(' ')[0]),
-              trailing: Icon(Icons.calendar_today),
-              onTap: () => _selectDate(context),
+            const Text(
+              'Personal Details',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-             SizedBox(height: 16),
-            _buildTextFormField(controller: _hospitalController, label: 'Hospital', validator: (v) => v!.isEmpty ? 'Hospital is required' : null),
-            SizedBox(height: 24),
-            ElevatedButton(onPressed: _nextPage, child: Text('Next: Select Blood Group'), style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD32F2F), padding: EdgeInsets.symmetric(vertical: 16))),
-             SizedBox(height: 16),
-            Center(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Already have an account?'))),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _nameController,
+              label: 'Full Name',
+              validator: (v) => v!.isEmpty ? 'Name is required' : null,
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _emailController,
+              label: 'Email Address',
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) => v!.isEmpty || !v.contains('@')
+                  ? 'A valid email is required'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _phoneController,
+              label: 'Phone Number',
+              keyboardType: TextInputType.phone,
+              validator: (v) => v!.isEmpty ? 'Phone number is required' : null,
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _locationController,
+              label: 'Location',
+              validator: (v) => v!.isEmpty ? 'Location is required' : null,
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _ageController,
+              label: 'Age',
+              keyboardType: TextInputType.number,
+              validator: (v) => v!.isEmpty ? 'Age is required' : null,
+            ),
+            const SizedBox(height: 20),
+            Text('Gender', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Male'),
+                    value: 'Male',
+                    groupValue: _gender,
+                    onChanged: (value) => setState(() => _gender = value),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Female'),
+                    value: 'Female',
+                    groupValue: _gender,
+                    onChanged: (value) => setState(() => _gender = value),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+            RadioListTile<String>(
+              title: const Text('Other'),
+              value: 'Other',
+              groupValue: _gender,
+              onChanged: (value) => setState(() => _gender = value),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 20),
+            _buildTextFormField(
+              controller: _hospitalController,
+              label: 'Hospital Name',
+              validator: (v) => v!.isEmpty ? 'Hospital is required' : null,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
+              ),
+              child: const Text(
+                'Next: Select Blood Group',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: RichText(
+                  text: const TextSpan(
+                    text: 'Already have an account? ',
+                    style: TextStyle(color: Colors.grey),
+                    children: [
+                      TextSpan(
+                        text: 'Login',
+                        style: TextStyle(
+                          color: Color(0xFFD32F2F),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -232,39 +360,95 @@ class _RequesterRegistrationScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Blood Group & Security', style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(
+              'Blood Group & Security',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _bloodGroup,
-              decoration: InputDecoration(labelText: 'Required Blood Group*', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((String value) {
-                return DropdownMenuItem<String>(value: value, child: Text(value));
+              decoration: InputDecoration(
+                labelText: 'Required Blood Group*',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((
+                String value,
+              ) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
               }).toList(),
               onChanged: (newValue) => setState(() => _bloodGroup = newValue),
               validator: (v) => v == null ? 'Blood group is required' : null,
             ),
             SizedBox(height: 16),
-            SwitchListTile(title: Text('Mark as Emergency'), value: _isEmergency, onChanged: (v) => setState(() => _isEmergency = v), secondary: Icon(Icons.emergency_outlined, color: _isEmergency ? Color(0xFFD32F2F): null)),
-             SizedBox(height: 16),
+            SwitchListTile(
+              title: Text('Mark as Emergency'),
+              value: _isEmergency,
+              onChanged: (v) => setState(() => _isEmergency = v),
+              secondary: Icon(
+                Icons.emergency_outlined,
+                color: _isEmergency ? Color(0xFFD32F2F) : null,
+              ),
+            ),
+            SizedBox(height: 16),
             _buildTextFormField(
               controller: _passwordController,
               label: 'Create Password',
               obscureText: !_passwordVisible,
-              validator: (v) => v!.length < 8 ? 'Password must be at least 8 characters' : null,
-              suffixIcon: IconButton(icon: Icon(_passwordVisible ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _passwordVisible = !_passwordVisible)),
+              validator: (v) => v!.length < 8
+                  ? 'Password must be at least 8 characters'
+                  : null,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () =>
+                    setState(() => _passwordVisible = !_passwordVisible),
+              ),
             ),
             SizedBox(height: 16),
             _buildTextFormField(
               controller: _confirmPasswordController,
               label: 'Confirm Password',
               obscureText: !_confirmPasswordVisible,
-              validator: (v) => v != _passwordController.text ? 'Passwords do not match' : null,
-              suffixIcon: IconButton(icon: Icon(_confirmPasswordVisible ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible)),
+              validator: (v) => v != _passwordController.text
+                  ? 'Passwords do not match'
+                  : null,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _confirmPasswordVisible
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+                onPressed: () => setState(
+                  () => _confirmPasswordVisible = !_confirmPasswordVisible,
+                ),
+              ),
             ),
             SizedBox(height: 24),
-            ElevatedButton(onPressed: _completeRegistration, child: Text('Complete Registration'), style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD32F2F), padding: EdgeInsets.symmetric(vertical: 16))),
-             SizedBox(height: 16),
-            Center(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Already have an account? Login'))),
+            ElevatedButton(
+              onPressed: _completeRegistration,
+              child: Text('Complete Registration'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFD32F2F),
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Already have an account? Login'),
+              ),
+            ),
           ],
         ),
       ),
