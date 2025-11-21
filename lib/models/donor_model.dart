@@ -14,4 +14,15 @@ class Donor {
     required this.lastDonationMonthsAgo,
     required this.totalDonations,
   });
+
+  factory Donor.fromJson(Map<String, dynamic> json) {
+    return Donor(
+      name: json['name'] ?? '',
+      bloodGroup: json['bloodGroup'] ?? '',
+      location: json['location'] ?? '',
+      isAvailable: json['isAvailable'] ?? false,
+      lastDonationMonthsAgo: json['lastDonationMonthsAgo'] ?? 0,
+      totalDonations: json['totalDonations'] ?? 0,
+    );
+  }
 }

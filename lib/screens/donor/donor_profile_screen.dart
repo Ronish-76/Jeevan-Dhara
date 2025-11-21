@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/user/find_donor_screen.dart'; // Assuming Donor model is here
+import 'package:jeevandhara/models/user_model.dart';
+import 'package:intl/intl.dart';
 
 class DonorProfileScreen extends StatelessWidget {
-  final Donor donor;
+  final User donor;
 
   const DonorProfileScreen({super.key, required this.donor});
 
@@ -19,6 +20,7 @@ class DonorProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildProfileHeader(context),
+            _buildEligibilityBanner(),
             _buildStatisticsSection(),
             _buildInfoCard(
               title: 'Personal Information',
@@ -40,10 +42,10 @@ class DonorProfileScreen extends StatelessWidget {
             _buildInfoCard(
               title: 'Health Information',
               details: {
-                'Blood Group': donor.bloodGroup,
+                'Blood Group': donor.bloodGroup ?? 'Unknown',
                 'Health Status': 'Excellent', // Sample Data
                 'Last Checkup': '2 months ago',
-                'Medical Conditions': 'None',
+                'Eligibility': _getEligibilityText(),
               },
                icons: {
                 'Blood Group': Icons.bloodtype_outlined,
@@ -86,7 +88,7 @@ class DonorProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              donor.name,
+              donor.fullName ?? 'Donor',
               style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
@@ -95,7 +97,7 @@ class DonorProfileScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on, color: Colors.white70, size: 16),
                 const SizedBox(width: 4),
-                Text(donor.location, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                Text(donor.location ?? '', style: const TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ],
@@ -110,9 +112,9 @@ class DonorProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatCard('${donor.totalDonations}', 'Donations Made', Icons.bloodtype),
-          _buildStatCard('${donor.totalDonations * 3}', 'Lives Saved', Icons.favorite),
-          _buildStatCard('${donor.lastDonationMonthsAgo}m', 'Last Donation', Icons.calendar_today),
+          _buildStatCard('0', 'Donations Made', Icons.bloodtype), // Placeholder
+          _buildStatCard('0', 'Lives Saved', Icons.favorite), // Placeholder
+          _buildStatCard(_getLastDonationText(), 'Last Donation', Icons.calendar_today),
         ],
       ),
     );
@@ -229,11 +231,68 @@ class DonorProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(donor.isAvailable ? 'Become Unavailable' : 'Become Available', style: const TextStyle(color: Colors.white)),
+              child: Text('Edit Profile', style: const TextStyle(color: Colors.white)),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getLastDonationText() {
+    if (donor.lastDonationDate == null) return 'Never';
+    final difference = DateTime.now().difference(donor.lastDonationDate!);
+    final months = (difference.inDays / 30).floor();
+    if (months < 1) return '${difference.inDays}d ago';
+    return '${months}m ago';
+  }
+
+  Widget _buildEligibilityBanner() {
+    if (donor.lastDonationDate == null) return const SizedBox.shrink();
+
+    final nextEligibleDate = donor.lastDonationDate!.add(const Duration(days: 90));
+    if (DateTime.now().isAfter(nextEligibleDate)) return const SizedBox.shrink();
+
+    final difference = nextEligibleDate.difference(DateTime.now());
+    final daysRemaining = difference.inDays;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.orange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Waiting Period Active',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Eligible to donate in $daysRemaining days.',
+                  style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getEligibilityText() {
+    if (donor.lastDonationDate == null) return 'Eligible Now';
+    final nextEligibleDate = donor.lastDonationDate!.add(const Duration(days: 90));
+    if (DateTime.now().isAfter(nextEligibleDate)) return 'Eligible Now';
+    return 'Eligible after ${DateFormat('MMM d, y').format(nextEligibleDate)}';
   }
 }

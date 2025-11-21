@@ -1,24 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/donor/donor_profile_screen.dart';
 
-// A simple data model for the Donor
-class Donor {
-  final String name;
-  final String bloodGroup;
-  final String location;
-  final bool isAvailable;
-  final int lastDonationMonthsAgo;
-  final int totalDonations;
-
-  Donor({
-    required this.name,
-    required this.bloodGroup,
-    required this.location,
-    required this.isAvailable,
-    required this.lastDonationMonthsAgo,
-    required this.totalDonations,
-  });
-}
+import 'package:jeevandhara/models/user_model.dart';
 
 class FindDonorScreen extends StatefulWidget {
   const FindDonorScreen({super.key});
@@ -29,11 +12,39 @@ class FindDonorScreen extends StatefulWidget {
 
 class _FindDonorScreenState extends State<FindDonorScreen> {
   // Sample data for donors
-  final List<Donor> _donors = [
-    Donor(name: 'Rajesh Thapa', bloodGroup: 'A+', location: 'Kathmandu', isAvailable: true, lastDonationMonthsAgo: 3, totalDonations: 5),
-    Donor(name: 'Sunita Sharma', bloodGroup: 'O+', location: 'Pokhara', isAvailable: false, lastDonationMonthsAgo: 1, totalDonations: 2),
-    Donor(name: 'Bikash Rai', bloodGroup: 'B-', location: 'Lalitpur', isAvailable: true, lastDonationMonthsAgo: 6, totalDonations: 8),
-    Donor(name: 'Anjali Gurung', bloodGroup: 'AB+', location: 'Kathmandu', isAvailable: true, lastDonationMonthsAgo: 2, totalDonations: 1),
+  final List<User> _donors = [
+    User(
+      fullName: 'Rajesh Thapa',
+      bloodGroup: 'A+',
+      location: 'Kathmandu',
+      isAvailable: true,
+      lastDonationDate: DateTime.now().subtract(const Duration(days: 90)),
+      totalDonations: 5,
+    ),
+    User(
+      fullName: 'Sunita Sharma',
+      bloodGroup: 'O+',
+      location: 'Pokhara',
+      isAvailable: false,
+      lastDonationDate: DateTime.now().subtract(const Duration(days: 30)),
+      totalDonations: 2,
+    ),
+    User(
+      fullName: 'Bikash Rai',
+      bloodGroup: 'B-',
+      location: 'Lalitpur',
+      isAvailable: true,
+      lastDonationDate: DateTime.now().subtract(const Duration(days: 180)),
+      totalDonations: 8,
+    ),
+    User(
+      fullName: 'Anjali Gurung',
+      bloodGroup: 'AB+',
+      location: 'Kathmandu',
+      isAvailable: true,
+      lastDonationDate: DateTime.now().subtract(const Duration(days: 60)),
+      totalDonations: 1,
+    ),
   ];
 
   String _selectedFilter = 'A+';
@@ -103,13 +114,13 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
       child: SizedBox(
         height: 35,
         child: ListView.separated(
-          scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
           itemCount: filters.length,
           itemBuilder: (context, index) {
             final filter = filters[index];
             final isSelected = _selectedFilter == filter;
-            return ChoiceChip(
+            return FilterChip(
               label: Text(filter),
               selected: isSelected,
               onSelected: (selected) {
@@ -120,9 +131,13 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
                 }
               },
               selectedColor: const Color(0xFFD32F2F),
-              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
               backgroundColor: const Color(0xFFF0F0F0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               side: BorderSide.none,
             );
           },
@@ -134,7 +149,7 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
 }
 
 class DonorCard extends StatelessWidget {
-  final Donor donor;
+  final User donor;
   const DonorCard({super.key, required this.donor});
 
   @override
@@ -143,7 +158,9 @@ class DonorCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => DonorProfileScreen(donor: donor)),
+          MaterialPageRoute(
+            builder: (context) => DonorProfileScreen(donor: donor),
+          ),
         );
       },
       child: Card(
@@ -180,8 +197,12 @@ class DonorCard extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          donor.bloodGroup,
-          style: const TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.bold, fontSize: 14),
+          donor.bloodGroup ?? '?',
+          style: const TextStyle(
+            color: Color(0xFFD32F2F),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
         ),
       ),
     );
@@ -196,8 +217,11 @@ class DonorCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  donor.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  donor.fullName ?? 'Unknown',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -205,12 +229,18 @@ class DonorCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: donor.isAvailable ? const Color(0xFF4CAF50) : const Color(0xFF9E9E9E),
+                  color: donor.isAvailable
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFF9E9E9E),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   donor.isAvailable ? 'Available' : 'Unavailable',
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -220,12 +250,15 @@ class DonorCard extends StatelessWidget {
             children: [
               const Icon(Icons.location_on, color: Color(0xFFD32F2F), size: 14),
               const SizedBox(width: 4),
-              Text(donor.location, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
+              Text(
+                donor.location ?? 'Unknown',
+                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            'Last donation: ${donor.lastDonationMonthsAgo} months ago • ${donor.totalDonations} donations',
+            'Last donation: ${_getLastDonationText()} • ${donor.totalDonations} donations',
             style: const TextStyle(color: Colors.grey, fontSize: 11),
           ),
         ],
@@ -247,5 +280,13 @@ class DonorCard extends StatelessWidget {
         disabledBackgroundColor: const Color(0xFFBDBDBD),
       ),
     );
+  }
+
+  String _getLastDonationText() {
+    if (donor.lastDonationDate == null) return 'Never';
+    final difference = DateTime.now().difference(donor.lastDonationDate!);
+    final months = (difference.inDays / 30).floor();
+    if (months < 1) return '${difference.inDays}d ago';
+    return '${months}m ago';
   }
 }
