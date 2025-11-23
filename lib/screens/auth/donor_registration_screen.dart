@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:jeevandhara/core/constants.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/screens/auth/login_screen.dart';
 
 class DonorRegistrationScreen extends StatefulWidget {
   const DonorRegistrationScreen({super.key});
@@ -66,47 +67,73 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
 
   Future<void> _registerUser() async {
     try {
-      final Uri apiUrl = Uri.parse(ApiConstants.registerUrl);
-
-      final response = await http.post(
-        apiUrl,
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'fullName': _nameController.text,
-          'email': _emailController.text,
-          'phone': _phoneController.text,
-          'password': _passwordController.text,
-          'location': _locationController.text,
-          'age': int.tryParse(_ageController.text),
-          'bloodGroup': _bloodGroup,
-          'healthProblems': _healthProblemsController.text,
-          'lastDonationDate': _lastDonationDate?.toIso8601String(),
-          'isAvailable': _isAvailable,
-          'donationCapability': _donationCapability,
-          'userType': 'donor',
-        }),
-      );
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final success = await authProvider.register({
+        'fullName': _nameController.text,
+        'email': _emailController.text,
+        'phone': _phoneController.text,
+        'password': _passwordController.text,
+        'location': _locationController.text,
+        'age': int.tryParse(_ageController.text),
+        'bloodGroup': _bloodGroup,
+        'healthProblems': _healthProblemsController.text,
+        'lastDonationDate': _lastDonationDate?.toIso8601String(),
+        'isAvailable': _isAvailable,
+        'donationCapability': _donationCapability,
+        'userType': 'donor',
+      });
 
       if (!mounted) return;
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful!')),
+      if (success) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Registration Successful', style: TextStyle(color: Color(0xFFD32F2F))),
+              content: const Text('Your account has been created successfully. Please login to continue.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('OK', style: TextStyle(color: Color(0xFFD32F2F))),
+                ),
+              ],
+            );
+          },
         );
-        Navigator.of(context).pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to register: ${response.body}')),
-        );
+        _showErrorDialog(authProvider.errorMessage ?? 'Registration failed. Please try again.');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+      _showErrorDialog('An unexpected error occurred: $e');
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _completeRegistration() {
@@ -196,7 +223,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
         iconTheme: IconThemeData(color: Colors.black),
         leading: _currentPage == 1
             ? IconButton(icon: Icon(Icons.arrow_back), onPressed: _previousPage)
-            : null,
+            : BackButton(onPressed: () => Navigator.of(context).pop()),
       ),
       body: SafeArea(
         child: Padding(

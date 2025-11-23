@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
+import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 
@@ -71,6 +73,16 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DonorMainScreen()),
+        );
+      } else if (user?.userType == 'hospital') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HospitalMainScreen()),
+        );
+      } else if (user?.userType == 'blood_bank') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BloodBankMainScreen()),
         );
       } else {
         // Fallback to login if user type is unknown

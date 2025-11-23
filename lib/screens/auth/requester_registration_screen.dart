@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/screens/auth/login_screen.dart';
 
 class RequesterRegistrationScreen extends StatefulWidget {
   const RequesterRegistrationScreen({super.key});
@@ -94,22 +95,54 @@ class _RequesterRegistrationScreenState
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful!')),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Registration Successful', style: TextStyle(color: Color(0xFFD32F2F))),
+              content: const Text('Your account has been created successfully. Please login to continue.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    // Navigate to login screen and remove all previous routes
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('OK', style: TextStyle(color: Color(0xFFD32F2F))),
+                ),
+              ],
+            );
+          },
         );
-        // Navigate to main screen or close registration
-        Navigator.of(context).pop(); 
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to register: ${authProvider.errorMessage}')),
-        );
+        _showErrorDialog(authProvider.errorMessage ?? 'Registration failed. Please try again.');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+      _showErrorDialog('An unexpected error occurred: $e');
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _completeRegistration() {
@@ -161,7 +194,7 @@ class _RequesterRegistrationScreenState
         iconTheme: IconThemeData(color: Colors.black),
         leading: _currentPage == 1
             ? IconButton(icon: Icon(Icons.arrow_back), onPressed: _previousPage)
-            : null,
+            : BackButton(onPressed: () => Navigator.of(context).pop()),
       ),
       body: SafeArea(
         child: Padding(

@@ -23,15 +23,21 @@ class AuthProvider with ChangeNotifier {
       final token = data['token'];
       final userData = data['user'];
       
-      _user = User.fromJson(userData);
-      
-      // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      await prefs.setString('user', jsonEncode(userData));
-      
-      _setLoading(false);
-      return true;
+      if (token != null && userData != null) {
+        _user = User.fromJson(userData);
+        
+        // Save to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('user', jsonEncode(userData));
+        
+        _setLoading(false);
+        return true;
+      } else {
+        _errorMessage = "Invalid response from server";
+        _setLoading(false);
+        return false;
+      }
     } catch (e) {
       _errorMessage = e.toString();
       _setLoading(false);
@@ -44,15 +50,20 @@ class AuthProvider with ChangeNotifier {
     try {
       final data = await _authService.register(userData);
       
-      final token = data['token'];
-      final userResponseData = data['user'];
-      
-      _user = User.fromJson(userResponseData);
-      
-      // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      await prefs.setString('user', jsonEncode(userResponseData));
+      // Check if backend returned token (auto-login supported)
+      if (data.containsKey('token') && data['token'] != null && data.containsKey('user')) {
+        final token = data['token'];
+        final userResponseData = data['user'];
+        
+        _user = User.fromJson(userResponseData);
+        
+        // Save to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('user', jsonEncode(userResponseData));
+      } 
+      // If no token, it means registration was successful but requires manual login
+      // which matches the current backend behavior
       
       _setLoading(false);
       return true;
@@ -70,14 +81,20 @@ class AuthProvider with ChangeNotifier {
       final data = await _authService.updateProfile(_user!.id!, updates);
       
       final userResponseData = data['user'];
-      _user = User.fromJson(userResponseData);
-      
-      // Update SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user', jsonEncode(userResponseData));
-      
-      _setLoading(false);
-      return true;
+      if (userResponseData != null) {
+        _user = User.fromJson(userResponseData);
+        
+        // Update SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', jsonEncode(userResponseData));
+        
+        _setLoading(false);
+        return true;
+      } else {
+         // Assume update success but no data returned?
+         _setLoading(false);
+         return true;
+      }
     } catch (e) {
       _errorMessage = e.toString();
       _setLoading(false);

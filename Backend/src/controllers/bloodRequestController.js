@@ -64,19 +64,10 @@ const getAllBloodRequests = async (req, res) => {
                 return res.status(404).json({ message: 'Donor profile not found' });
             }
 
-            // 1. Check 3-month waiting period
-            if (donor.lastDonationDate) {
-                const threeMonthsAgo = new Date();
-                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-                if (new Date(donor.lastDonationDate) > threeMonthsAgo) {
-                    // Donor donated recently, cannot see requests
-                    return res.json([]);
-                }
-            }
+            // Removed 3-month waiting period check so requests are visible even if ineligible.
+            // Logic to prevent donation is handled in acceptBloodRequest and frontend.
 
             // 2. Blood Compatibility Logic
-            // Define which blood groups the donor can donate TO
             const donationCompatibility = {
                 'A+': ['A+', 'AB+'],
                 'O+': ['O+', 'A+', 'B+', 'AB+'],
@@ -89,8 +80,6 @@ const getAllBloodRequests = async (req, res) => {
             };
 
             const compatibleGroups = donationCompatibility[donor.bloodGroup] || [];
-
-            // Filter requests where the required blood group is in the compatible list
             filter.bloodGroup = { $in: compatibleGroups };
         }
 
@@ -167,6 +156,7 @@ const getMyBloodRequests = async (req, res) => {
     try {
         const requests = await BloodRequest.find({ requester: req.params.requesterId })
             .populate('requester', 'fullName')
+            .populate('donor', 'fullName')
             .sort({ createdAt: -1 });
         res.json(requests);
     } catch (error) {
@@ -174,7 +164,20 @@ const getMyBloodRequests = async (req, res) => {
     }
 };
 
-
+const getDonorHistory = async (req, res) => {
+    try {
+        // Find requests where this donor was the one fulfilling it
+        const history = await BloodRequest.find({ 
+            donor: req.params.donorId,
+            status: 'fulfilled'
+        })
+        .sort({ updatedAt: -1 }); // Most recent first
+        
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching donation history', error: error.message });
+    }
+};
 
 const acceptBloodRequest = async (req, res) => {
     try {
@@ -189,13 +192,13 @@ const acceptBloodRequest = async (req, res) => {
             return res.status(400).json({ message: 'Request is no longer pending' });
         }
 
-        // Check donor eligibility
         const Donor = require('../models/Donor');
         const donor = await Donor.findById(donorId);
         if (!donor) {
             return res.status(404).json({ message: 'Donor not found' });
         }
 
+        // Strict eligibility check when accepting
         if (donor.lastDonationDate) {
             const lastDonation = new Date(donor.lastDonationDate);
             const threeMonthsAgo = new Date();
@@ -233,7 +236,6 @@ const fulfillBloodRequest = async (req, res) => {
             return res.status(400).json({ message: 'Request is not in accepted state' });
         }
 
-        // Optional: Verify if the donorId matches the one who accepted it
         if (request.donor.toString() !== donorId) {
             return res.status(403).json({ message: 'You are not the donor for this request' });
         }
@@ -241,9 +243,12 @@ const fulfillBloodRequest = async (req, res) => {
         request.status = 'fulfilled';
         await request.save();
 
-        // Update donor's last donation date
         const Donor = require('../models/Donor');
-        await Donor.findByIdAndUpdate(donorId, { lastDonationDate: new Date() });
+        // Increment donation count and update date
+        await Donor.findByIdAndUpdate(donorId, { 
+            lastDonationDate: new Date(),
+            $inc: { totalDonations: 1 } 
+        });
 
         res.json({ message: 'Blood request fulfilled successfully', request });
     } catch (error) {
@@ -259,6 +264,7 @@ module.exports = {
     deleteBloodRequest,
     cancelBloodRequest,
     getMyBloodRequests,
+    getDonorHistory,
     acceptBloodRequest,
     fulfillBloodRequest
 };

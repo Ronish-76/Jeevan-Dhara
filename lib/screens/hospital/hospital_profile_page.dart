@@ -1,7 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:jeevandhara/screens/auth/login_screen.dart';
+import 'package:jeevandhara/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 
-class HospitalProfilePage extends StatelessWidget {
+class HospitalProfilePage extends StatefulWidget {
   const HospitalProfilePage({super.key});
+
+  @override
+  State<HospitalProfilePage> createState() => _HospitalProfilePageState();
+}
+
+class _HospitalProfilePageState extends State<HospitalProfilePage> {
+  late Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && user.id != null) {
+      _profileFuture = _fetchProfile(user.id!);
+    } else {
+      _profileFuture = Future.error('User not logged in');
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchProfile(String id) async {
+    try {
+      final data = await ApiService().get('auth/profile/hospital/$id');
+      return data;
+    } catch (e) {
+      throw Exception('Failed to load profile: $e');
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await Provider.of<AuthProvider>(context, listen: false).logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,102 +52,151 @@ class HospitalProfilePage extends StatelessWidget {
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         title: const Text('Hospital Profile'),
-        actions: [TextButton(onPressed: () {}, child: const Text('Edit', style: TextStyle(color: Colors.white)))],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 20),
-            _buildBasicInfoCard(),
-            const SizedBox(height: 20),
-            _buildAboutHospitalCard(),
-            const SizedBox(height: 20),
-            _buildFacilitiesCard(),
-          ],
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No data found'));
+          }
+
+          final profile = snapshot.data!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildProfileHeader(profile),
+                const SizedBox(height: 20),
+                _buildBasicInfoCard(profile),
+                const SizedBox(height: 20),
+                _buildAboutHospitalCard(profile),
+                const SizedBox(height: 20),
+                _buildFacilitiesCard(profile),
+                const SizedBox(height: 30),
+                _buildLogoutButton(),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _handleLogout,
+        icon: const Icon(Icons.logout, color: Colors.white),
+        label: const Text(
+          'LOGOUT',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFD32F2F), // Red background
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 2,
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
-    return const Column(
+  Widget _buildProfileHeader(Map<String, dynamic> profile) {
+    final name = profile['hospitalName'] ?? 'Unknown Hospital';
+    final isVerified = profile['isVerified'] == true;
+    final type = profile['hospitalType']?.toString().toUpperCase() ?? 'HOSPITAL';
+    final estYear = profile['createdAt'] != null ? DateTime.parse(profile['createdAt']).year : DateTime.now().year;
+
+    return Column(
       children: [
-        Text('Bir Hospital', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-        SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.verified, color: Colors.green, size: 16),
-            SizedBox(width: 4),
-            Text('Verified', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        SizedBox(height: 4),
-        Text('Government Hospital • Est. 1889', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        if (isVerified)
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.verified, color: Colors.green, size: 16),
+              SizedBox(width: 4),
+              Text('Verified', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        const SizedBox(height: 4),
+        Text('$type • Joined $estYear', style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildBasicInfoCard() {
+  Widget _buildBasicInfoCard(Map<String, dynamic> profile) {
+    final address = '${profile['address'] ?? ''}, ${profile['city'] ?? ''}'.trim();
+    
     return _buildInfoCard(
       title: 'Basic Information',
       children: [
-        _buildInfoRow(Icons.local_hospital_outlined, 'Hospital Name', 'Bir Hospital'),
-        _buildInfoRow(Icons.location_on_outlined, 'Address', 'Mahabouddha, Kathmandu'),
-        _buildInfoRow(Icons.badge_outlined, 'Registration ID', 'BH-2024-00123'),
-        _buildInfoRow(Icons.phone_outlined, 'Contact Number', '+977 1-4221119', isTappable: true),
-        _buildInfoRow(Icons.email_outlined, 'Email', 'info@birhospital.gov.np', isTappable: true),
+        _buildInfoRow(Icons.local_hospital_outlined, 'Hospital Name', profile['hospitalName'] ?? 'N/A'),
+        _buildInfoRow(Icons.location_on_outlined, 'Address', address.isNotEmpty ? address : 'N/A'),
+        _buildInfoRow(Icons.badge_outlined, 'Registration ID', profile['hospitalRegistrationId'] ?? 'N/A'),
+        _buildInfoRow(Icons.phone_outlined, 'Contact Number', profile['phoneNumber'] ?? 'N/A', isTappable: true),
+        _buildInfoRow(Icons.email_outlined, 'Email', profile['email'] ?? 'N/A', isTappable: true),
+        _buildInfoRow(Icons.person_outline, 'Contact Person', profile['contactPerson'] ?? 'N/A'),
       ],
     );
   }
 
-  Widget _buildAboutHospitalCard() {
+  Widget _buildAboutHospitalCard(Map<String, dynamic> profile) {
+    final type = profile['hospitalType'] ?? 'general';
+    final desc = 'A registered $type hospital located in ${profile['city'] ?? 'Nepal'}, committed to providing quality healthcare services.';
+
     return _buildInfoCard(
       title: 'About Hospital',
-      children: const [
+      children: [
         Text(
-          'Bir Hospital is one of the oldest and largest hospitals in Nepal, providing comprehensive healthcare services including emergency care, surgery, and specialized treatments.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          desc,
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
         )
       ],
     );
   }
 
-  Widget _buildFacilitiesCard() {
-    final facilities = {
-      'Emergency Services': true,
-      'Blood Bank': true,
-      'Intensive Care Unit (ICU)': true,
-      'Operation Theater': true,
-      'Laboratory Services': true,
-      'Ambulance Services': true,
-       '24/7 Service': true,
-      'Radiology Department': false,
-      'Pharmacy': false,
-    };
+  Widget _buildFacilitiesCard(Map<String, dynamic> profile) {
+    final hasBloodBank = profile['bloodBankFacility'] == true;
+    final hasEmergency = profile['emergencyService24x7'] == true;
+
+    // Create a list of facilities based on available data
+    final facilities = [
+      {'name': 'Blood Bank Facility', 'available': hasBloodBank},
+      {'name': '24x7 Emergency Service', 'available': hasEmergency},
+      // Add others if backend supports them in future
+    ];
 
     return _buildInfoCard(
-      title: 'Available Facilities',
+      title: 'Key Facilities',
       children: [
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 5, // Adjust for checkbox list
+            crossAxisCount: 1, // Single column for clarity with fewer items
+            childAspectRatio: 6, 
             mainAxisSpacing: 4,
             crossAxisSpacing: 8,
           ),
           itemCount: facilities.length,
           itemBuilder: (context, index) {
-            final key = facilities.keys.elementAt(index);
+            final item = facilities[index];
+            final isAvailable = item['available'] as bool;
             return Row(
               children: [
-                Icon(facilities[key]! ? Icons.check_box : Icons.check_box_outline_blank, color: facilities[key]! ? Colors.green : Colors.grey, size: 20),
-                const SizedBox(width: 8),
-                Expanded(child: Text(key, style: const TextStyle(fontSize: 12))),
+                Icon(isAvailable ? Icons.check_circle : Icons.cancel, color: isAvailable ? Colors.green : Colors.red, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(item['name'] as String, style: const TextStyle(fontSize: 14))),
               ],
             );
           },

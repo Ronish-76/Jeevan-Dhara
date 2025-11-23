@@ -1,7 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:jeevandhara/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:intl/intl.dart';
 
-class DonationHistoryPage extends StatelessWidget {
+class DonationHistoryPage extends StatefulWidget {
   const DonationHistoryPage({super.key});
+
+  @override
+  State<DonationHistoryPage> createState() => _DonationHistoryPageState();
+}
+
+class _DonationHistoryPageState extends State<DonationHistoryPage> {
+  bool _isLoading = true;
+  List<dynamic> _donations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDonations();
+  }
+
+  Future<void> _fetchDonations() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      if (user == null || user.id == null) return;
+
+      final data = await ApiService().getDonations(user.id!);
+      if (mounted) {
+        setState(() {
+          _donations = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching donations: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,29 +56,38 @@ class DonationHistoryPage extends StatelessWidget {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildQuickStats(),
-          const SizedBox(height: 16),
-          _buildFilterControls(),
-          const SizedBox(height: 16),
-          _buildDonationsList(),
-          const SizedBox(height: 16),
-          _buildAnalyticsSection(),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
+          : ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildQuickStats(),
+                const SizedBox(height: 16),
+                _buildFilterControls(),
+                const SizedBox(height: 16),
+                _buildDonationsList(),
+              ],
+            ),
     );
   }
 
   Widget _buildQuickStats() {
-    return const Row(
+    int totalDonations = _donations.length;
+    int totalUnits = 0;
+    for (var d in _donations) {
+      totalUnits += (d['units'] as num).toInt();
+    }
+    // Assuming all recorded donations are Verified for now as they are entered by bank staff
+    int verified = totalDonations; 
+    int pending = 0;
+
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatItem(value: '12', label: 'Total Donations'),
-        _StatItem(value: '12', label: 'Total Units'),
-        _StatItem(value: '8', label: 'Verified'),
-        _StatItem(value: '4', label: 'Pending'),
+        _StatItem(value: totalDonations.toString(), label: 'Total Donations'),
+        _StatItem(value: totalUnits.toString(), label: 'Total Units'),
+        _StatItem(value: verified.toString(), label: 'Verified'),
+        _StatItem(value: pending.toString(), label: 'Pending'),
       ],
     );
   }
@@ -68,30 +114,31 @@ class DonationHistoryPage extends StatelessWidget {
   }
 
   Widget _buildDonationsList() {
-    final donations = [
-      {'name': 'Rajesh Kumar', 'id': 'DN-101', 'units': 1, 'blood': 'A+', 'status': 'Verified'},
-      {'name': 'Sita Sharma', 'id': 'DN-102', 'units': 1, 'blood': 'O-', 'status': 'Pending'},
-      {'name': 'Amit Thapa', 'id': 'DN-103', 'units': 1, 'blood': 'B+', 'status': 'Verified'},
-      {'name': 'Anjali Mehta', 'id': 'DN-104', 'units': 1, 'blood': 'AB+', 'status': 'Rejected'},
-    ];
+    if (_donations.isEmpty) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Text('No donation history found.'),
+      ));
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Donations (12)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        Text('Donations (${_donations.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        ...donations.map((d) => _buildDonationCard(d)).toList(),
+        ..._donations.map((d) => _buildDonationCard(d)).toList(),
       ],
     );
   }
 
-  Widget _buildDonationCard(Map<String, dynamic> donation) {
-    final statusColors = {
-      'Verified': Colors.green,
-      'Pending': Colors.orange,
-      'Rejected': Colors.red,
-    };
-    final color = statusColors[donation['status']] ?? Colors.grey;
+  Widget _buildDonationCard(dynamic donation) {
+    final name = donation['donorName'] ?? 'Unknown Donor';
+    final id = (donation['_id'] as String).substring(0, 8).toUpperCase(); // Short ID
+    final units = donation['units'];
+    final blood = donation['bloodGroup'];
+    // Assuming verified since it's in history
+    const status = 'Verified'; 
+    const color = Colors.green;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -99,44 +146,31 @@ class DonationHistoryPage extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            CircleAvatar(backgroundColor: color, child: Text(donation['name'][0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            CircleAvatar(backgroundColor: color, child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(donation['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(donation['id'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('ID: $id', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 4),
-                  Text('${donation['units']} Unit, Blood Group: ${donation['blood']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text('$units Unit(s), Blood Group: $blood', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  if (donation['donationDate'] != null)
+                    Text(
+                      DateFormat('MMM dd, yyyy').format(DateTime.parse(donation['donationDate'])),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
                 ],
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(donation['status'], style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+              child: const Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-    Widget _buildAnalyticsSection() {
-    return Card(
-      elevation: 1,
-      child: ExpansionTile(
-        title: const Text('Donation Analytics & Insights', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        childrenPadding: const EdgeInsets.all(16),
-        children: [
-          AspectRatio(
-            aspectRatio: 2,
-            child: Container(color: Colors.grey.shade200, child: const Center(child: Text('Monthly Trends Chart'))),
-          ),
-          const SizedBox(height: 12),
-          const Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ _StatItem(value: '85%', label: 'Verification Rate'), _StatItem(value: '25%', label: 'Repeat Donors'),]),
-        ],
       ),
     );
   }

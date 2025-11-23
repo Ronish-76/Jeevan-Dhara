@@ -104,11 +104,19 @@ const deleteDonor = async (req, res) => {
 
 const searchDonors = async (req, res) => {
   try {
-    const { bloodGroup, location } = req.query;
+    const { bloodGroup, location, search } = req.query;
     const query = {};
     
     if (bloodGroup) query.bloodGroup = bloodGroup;
     if (location) query.location = new RegExp(location, 'i');
+    if (search) {
+      // Search by fullName, email, or phone
+      query.$or = [
+        { fullName: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
+        { phone: new RegExp(search, 'i') }
+      ];
+    }
     
     const donors = await Donor.find(query).select('-password');
     res.json(donors);

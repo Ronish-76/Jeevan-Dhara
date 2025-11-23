@@ -18,6 +18,11 @@ class RequesterHomePage extends StatefulWidget {
 }
 
 class _RequesterHomePageState extends State<RequesterHomePage> {
+  
+  void _refreshRequests() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,13 +101,14 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
             iconColor: Colors.white,
             textColor: Colors.white,
             backgroundColor: const Color(0xFFD32F2F),
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const RequesterPostBloodRequestScreen(),
                 ),
               );
+              _refreshRequests();
             },
           ),
           _buildFeatureCard(
@@ -177,9 +183,9 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -225,13 +231,14 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => RequesterMyRequestsScreen(),
                     ),
                   );
+                  _refreshRequests();
                 },
                 child: const Text(
                   'View All',
@@ -273,6 +280,21 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
     );
   }
 
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.blue;
+      case 'accepted':
+        return Colors.green;
+      case 'fulfilled':
+        return Colors.purple;
+      case 'cancelled':
+        return Colors.grey;
+      default:
+        return Colors.black;
+    }
+  }
+
   Widget _buildRequestCard(BloodRequest request) {
     return GestureDetector(
       onTap: () {
@@ -284,147 +306,107 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFD32F2F).withOpacity(0.1),
-              ),
-              child: const Icon(Icons.water_drop, color: Color(0xFFD32F2F)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         request.patientName,
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        request.bloodGroup,
-                        style: const TextStyle(
-                          color: Color(0xFFD32F2F),
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (request.notifyViaEmergency)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: _buildPillTag(
-                            'Emergency',
-                            const Color(0xFFC62828),
-                            Colors.white,
-                          ),
-                        ),
-                      _buildPillTag(
-                        'Active', // You might want to add status to backend later
-                        Colors.green,
-                        Colors.white,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.grey,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          request.hospitalName,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Colors.grey,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        _getTimeAgo(request.createdAt),
+                        '${request.units} Unit${request.units > 1 ? 's' : ''} Required',
                         style: const TextStyle(
-                          color: Colors.grey,
                           fontSize: 12,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD32F2F).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      request.bloodGroup,
+                      style: const TextStyle(
+                        color: Color(0xFFD32F2F),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.local_hospital,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      request.hospitalName,
+                      style: const TextStyle(color: Colors.grey),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(request.status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _getStatusColor(request.status)),
+                    ),
+                    child: Text(
+                      request.status.toUpperCase(),
+                      style: TextStyle(
+                        color: _getStatusColor(request.status),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        request.createdAt.toLocal().toString().split(' ')[0],
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    final difference = DateTime.now().difference(dateTime);
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
-
-  Widget _buildPillTag(String text, Color backgroundColor, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+              // Removed Action Buttons (Delete/Cancel) as per request for Home Page view
+            ],
+          ),
         ),
       ),
     );

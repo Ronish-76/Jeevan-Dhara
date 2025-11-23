@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/donor/donor_donation_history_page.dart';
+import 'package:jeevandhara/models/blood_request_model.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/screens/auth/login_screen.dart';
 import 'package:jeevandhara/models/user_model.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:jeevandhara/services/api_service.dart';
 
 class DonorProfilePage extends StatefulWidget {
   const DonorProfilePage({super.key});
@@ -15,24 +14,60 @@ class DonorProfilePage extends StatefulWidget {
 }
 
 class _DonorProfilePageState extends State<DonorProfilePage> {
-  late Future<User> _donorFuture;
+  late Future<Map<String, dynamic>> _profileDataFuture;
 
   @override
   void initState() {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _donorFuture = _fetchDonorProfile(authProvider.user!.id!);
+    if (authProvider.user != null && authProvider.user!.id != null) {
+      _profileDataFuture = _fetchProfileData(authProvider.user!.id!);
+    } else {
+      _profileDataFuture = Future.error('User not logged in');
+    }
   }
 
-  Future<User> _fetchDonorProfile(String userId) async {
-    final response = await http.get(
-      Uri.parse('http://your_backend_ip:5000/api/donors/$userId'),
-    );
+  Future<Map<String, dynamic>> _fetchProfileData(String userId) async {
+    try {
+      // Fetch user profile
+      final profileData = await ApiService().get('auth/profile/donor/$userId');
+      final user = User.fromJson(profileData);
 
-    if (response.statusCode == 200) {
-      return User.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to load donor profile');
+      // Fetch donation history to calculate units
+      final historyData = await ApiService().getDonorDonationHistory(userId);
+      final history = (historyData as List).map((e) => BloodRequest.fromJson(e)).toList();
+      
+      int totalUnits = 0;
+      for (var req in history) {
+        if (req.status == 'fulfilled') {
+           totalUnits += req.units;
+        }
+      }
+
+      // If backend totalDonations is 0 but history has fulfilled items, use history count
+      // (Backend usually updates totalDonations on fulfill, so user.totalDonations should be accurate)
+      int totalDonations = user.totalDonations;
+      if (totalDonations == 0 && history.isNotEmpty) {
+         totalDonations = history.where((r) => r.status == 'fulfilled').length;
+      }
+
+      return {
+        'user': user,
+        'totalUnits': totalUnits,
+        'totalDonations': totalDonations,
+      };
+    } catch (e) {
+      throw Exception('Failed to load profile data: $e');
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await Provider.of<AuthProvider>(context, listen: false).logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
     }
   }
 
@@ -46,27 +81,31 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            onPressed: _handleLogout,
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
           ),
         ],
       ),
-      body: FutureBuilder<User>(
-        future: _donorFuture,
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (snapshot.hasData) {
-            final donor = snapshot.data!;
+            final user = snapshot.data!['user'] as User;
+            final totalUnits = snapshot.data!['totalUnits'] as int;
+            final totalDonations = snapshot.data!['totalDonations'] as int;
+
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildProfileHeader(donor),
-                  _buildDonationStatistics(donor),
-                  _buildEligibilityCard(donor),
-                  _buildInfoCard(donor),
+                  _buildProfileHeader(user),
+                  _buildDonationStatistics(totalDonations, totalUnits),
+                  _buildEligibilityCard(user),
+                  _buildInfoCard(user),
                   _buildAccountManagementCard(context),
                   const SizedBox(height: 20),
                 ],
@@ -115,37 +154,30 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
             'Blood Group: ${donor.bloodGroup ?? 'N/A'}',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Member since January 2022',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
+          // Removed "Member since..." as requested
         ],
       ),
     );
   }
 
-  Widget _buildDonationStatistics(User donor) {
+  Widget _buildDonationStatistics(int donations, int units) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.center, // Centered since fewer items
         children: [
           _buildStatCard(
-            donor.totalDonations.toString(),
+            donations.toString(),
             'Donations',
             Icons.bloodtype_outlined,
           ),
+          const SizedBox(width: 40),
           _buildStatCard(
-            '18',
+            units.toString(),
             'Units',
             Icons.favorite_border,
-          ), // Assuming 'Units' is not in the model
-          _buildStatCard(
-            '2+',
-            'Years',
-            Icons.calendar_today_outlined,
-          ), // Assuming 'Years' is calculated
+          ),
+          // Removed "Years" as requested
         ],
       ),
     );
@@ -177,7 +209,7 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
       decoration: BoxDecoration(
         color: isEligible
             ? const Color(0xFFE8F5E9)
-            : const Color(0xFFFFEBEE), // Light Green or Light Red
+            : const Color(0xFFFFEBEE), 
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isEligible ? const Color(0xFF4CAF50) : const Color(0xFFD32F2F),
@@ -236,41 +268,11 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     return _buildSectionCard(
       title: 'Account Management',
       children: [
-        _buildManagementRow(
-          Icons.notifications_outlined,
-          'Notifications',
-          trailing: Switch(
-            value: true,
-            onChanged: (val) {},
-            activeColor: const Color(0xFFD32F2F),
-          ),
-        ),
-        _buildManagementRow(Icons.share_outlined, 'Share Jeevan Dhara'),
-        _buildManagementRow(
-          Icons.history_outlined,
-          'View Donation History',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const DonorDonationHistoryPage(),
-              ),
-            );
-          },
-        ),
-        const Divider(height: 24),
+        // Removed Notifications, Share, View History as requested
         SizedBox(
           width: double.infinity,
           child: TextButton.icon(
-            onPressed: () async {
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
-              }
-            },
+            onPressed: _handleLogout,
             icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
             label: const Text(
               'Log Out',
@@ -326,20 +328,5 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     );
   }
 
-  Widget _buildManagementRow(
-    IconData icon,
-    String label, {
-    Widget? trailing,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFF666666)),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-      trailing:
-          trailing ??
-          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      contentPadding: EdgeInsets.zero,
-      onTap: onTap,
-    );
-  }
+  // Removed unused _buildManagementRow
 }

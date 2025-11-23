@@ -1,62 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 
-// Data model for Blood Bank
+// Data model for Blood Bank (Copied for Donor View)
 class BloodBank {
   final String id;
   final String name;
   final String location;
   final double distance;
   final String phone;
-  final Map<String, int> stock;
-
+  
   BloodBank({
     required this.id,
     required this.name,
     required this.location,
     required this.distance,
     required this.phone,
-    required this.stock,
   });
 
   factory BloodBank.fromJson(Map<String, dynamic> json) {
-    // Helper function to convert dynamic map to Map<String, int>
-    Map<String, int> parseStock(dynamic stockData) {
-      if (stockData == null) return {};
-      final Map<String, int> stock = {};
-      if (stockData is Map<String, dynamic>) {
-         stockData.forEach((key, value) {
-          stock[key] = value is int ? value : int.tryParse(value.toString()) ?? 0;
-        });
-      }
-      return stock;
-    }
-
     return BloodBank(
       id: json['_id'] ?? '',
       name: json['bloodBankName'] ?? json['hospitalName'] ?? 'Unknown Blood Bank',
       location: json['fullAddress'] ?? json['hospitalLocation'] ?? 'Unknown Location',
-      distance: 0.0, // Default distance as backend doesn't provide it yet
+      distance: 0.0, 
       phone: json['phoneNumber'] ?? json['hospitalPhone'] ?? '',
-      stock: parseStock(json['inventory']),
     );
   }
 }
 
-class RequesterBloodBankScreen extends StatefulWidget {
-  const RequesterBloodBankScreen({super.key});
+class DonorBloodBankScreen extends StatefulWidget {
+  const DonorBloodBankScreen({super.key});
 
   @override
-  State<RequesterBloodBankScreen> createState() => _RequesterBloodBankScreenState();
+  State<DonorBloodBankScreen> createState() => _DonorBloodBankScreenState();
 }
 
-class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
+class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
   late Future<List<BloodBank>> _bloodBanksFuture;
-  List<BloodBank> _allBloodBanks = [];
-  List<BloodBank> _filteredBloodBanks = [];
-  
-  // Search controller removed as per request
 
   @override
   void initState() {
@@ -67,19 +50,13 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
   Future<List<BloodBank>> _fetchBloodBanks() async {
     try {
       final data = await ApiService().getBloodBanks();
-      // Debug print to see what data we get
-      debugPrint('Blood Banks Data: $data');
       final banks = data.map((json) => BloodBank.fromJson(json)).toList();
-      _allBloodBanks = banks;
-      _filteredBloodBanks = banks;
       return banks;
     } catch (e) {
       debugPrint('Error fetching blood banks: $e');
       return [];
     }
   }
-
-  // Filter logic removed
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +85,6 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Search bar removed
-          // Map preview removed
           _buildInfoBanner(),
           Expanded(
             child: FutureBuilder<List<BloodBank>>(
@@ -125,14 +100,11 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
                   return const Center(child: Text('No blood banks found.'));
                 }
 
-                // Always show all banks since filter is removed
-                final displayBanks = snapshot.data!;
-
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: displayBanks.length,
+                  itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
-                    return BloodBankCard(bank: displayBanks[index]);
+                    return DonorBloodBankCard(bank: snapshot.data![index]);
                   },
                 );
               },
@@ -143,25 +115,31 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
     );
   }
 
-  // _buildSearchBar removed
-  // _buildMapPreview removed
-
   Widget _buildInfoBanner() {
+    final user = Provider.of<AuthProvider>(context).user;
+    final isEligible = user?.isEligible ?? false;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: isEligible ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.blue, size: 28),
-          SizedBox(width: 12),
+          Icon(isEligible ? Icons.check_circle_outline : Icons.info_outline, 
+               color: isEligible ? Colors.green : Colors.orange, size: 28),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Tip: Call ahead to confirm blood availability before visiting. Blood banks may have updated inventory.',
-              style: TextStyle(color: Color(0xFF666666), fontSize: 12),
+              isEligible 
+                  ? 'You are eligible to donate. Select a blood bank to schedule.' 
+                  : 'You are currently ineligible to donate due to the waiting period.',
+              style: TextStyle(
+                color: isEligible ? Colors.green.shade800 : Colors.orange.shade800, 
+                fontSize: 12
+              ),
             ),
           ),
         ],
@@ -170,16 +148,9 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
   }
 }
 
-class BloodBankCard extends StatelessWidget {
+class DonorBloodBankCard extends StatelessWidget {
   final BloodBank bank;
-  const BloodBankCard({super.key, required this.bank});
-
-  Color _getStockColor(int units) {
-    if (units >= 10) return const Color(0xFF4CAF50); // Green
-    if (units > 0) return const Color(0xFFFF9800); // Yellow
-    if (units == 0) return const Color(0xFFF44336); // Red
-    return const Color(0xFF9E9E9E); // Gray for not specified
-  }
+  const DonorBloodBankCard({super.key, required this.bank});
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -193,8 +164,18 @@ class BloodBankCard extends StatelessWidget {
     }
   }
 
+  void _scheduleDonation(BuildContext context) {
+    // Placeholder for scheduling logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Donation scheduled at ${bank.name}')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final isEligible = user?.isEligible ?? false;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -207,12 +188,9 @@ class BloodBankCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCardHeader(),
-            const SizedBox(height: 12),
-            const Text('Available Blood Units:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            _buildStockGrid(),
             const SizedBox(height: 16),
-            _buildActionButtons(),
+            // Removed Stock Grid
+            _buildActionButtons(context, isEligible),
           ],
         ),
       ),
@@ -238,73 +216,61 @@ class BloodBankCard extends StatelessWidget {
             ],
           ),
         ),
-        // Text('${bank.distance} km', style: const TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.w500)),
       ],
     );
   }
 
-  Widget _buildStockGrid() {
-    if (bank.stock.isEmpty) {
-      return const Text('No stock information available', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic));
-    }
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.5,
-      ),
-      itemCount: bank.stock.length,
-      itemBuilder: (context, index) {
-        String bloodGroup = bank.stock.keys.elementAt(index);
-        int units = bank.stock.values.elementAt(index);
-        return Container(
-          decoration: BoxDecoration(
-            color: _getStockColor(units).withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _getStockColor(units)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(units >= 0 ? units.toString() : '-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _getStockColor(units))),
-              Text(bloodGroup, style: TextStyle(fontSize: 12, color: _getStockColor(units).withOpacity(0.9))),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
+  Widget _buildActionButtons(BuildContext context, bool isEligible) {
+    return Column(
       children: [
-        Expanded(
+        SizedBox(
+          width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: (bank.phone.isNotEmpty) ? () => _makePhoneCall(bank.phone) : null,
-            icon: const Icon(Icons.call, size: 18),
-            label: const Text('Call'),
+            onPressed: isEligible ? () => _scheduleDonation(context) : null,
+            icon: const Icon(Icons.calendar_today, size: 20),
+            label: const Text('SCHEDULE DONATION'),
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: const Color(0xFFD32F2F),
+              disabledBackgroundColor: Colors.grey.shade300,
+              disabledForegroundColor: Colors.grey.shade600,
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: isEligible ? 2 : 0,
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.directions, size: 18),
-            label: const Text('Directions'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFD32F2F),
-              side: const BorderSide(color: Color(0xFFD32F2F)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: (bank.phone.isNotEmpty) ? () => _makePhoneCall(bank.phone) : null,
+                icon: const Icon(Icons.call, size: 18),
+                label: const Text('Call'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD32F2F),
+                  side: const BorderSide(color: Color(0xFFD32F2F)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {}, // Placeholder for direction
+                icon: const Icon(Icons.directions, size: 18),
+                label: const Text('Directions'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD32F2F),
+                  side: const BorderSide(color: Color(0xFFD32F2F)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

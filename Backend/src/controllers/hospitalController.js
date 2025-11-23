@@ -22,7 +22,18 @@ const registerHospital = async (req, res) => {
 
 const getAllHospitals = async (req, res) => {
   try {
-    const hospitals = await Hospital.find();
+    const { search } = req.query;
+    const query = {};
+    
+    if (search) {
+      query.$or = [
+        { hospitalName: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
+        { phoneNumber: new RegExp(search, 'i') }
+      ];
+    }
+
+    const hospitals = await Hospital.find(query);
     res.json(hospitals);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -41,7 +52,7 @@ const requestBlood = async (req, res) => {
 
 const getBloodRequests = async (req, res) => {
   try {
-    const requests = await HospitalBloodRequest.find({ hospital: req.params.hospitalId });
+    const requests = await HospitalBloodRequest.find({ hospital: req.params.hospitalId }).populate('hospital');
     res.json(requests);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

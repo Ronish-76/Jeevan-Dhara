@@ -40,39 +40,26 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
     }
   }
 
-  Future<void> _sendSMS(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'sms',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      throw 'Could not launch $launchUri';
-    }
-  }
-
   Future<void> _acceptRequest() async {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && !user.isEligible) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('You are currently in the 3-month waiting period and cannot accept new requests.'),
+        backgroundColor: Colors.orange,
+      ));
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      final user = Provider.of<AuthProvider>(context, listen: false).user;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to accept requests')));
-        return;
-      }
-
-      if (!user.isEligible) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('You are currently in the 3-month waiting period.'),
-          backgroundColor: Colors.orange,
-        ));
         return;
       }
 
       await ApiService().acceptBloodRequest(request.id, user.id!);
       
       setState(() {
-        // Create a new BloodRequest with updated status
         request = BloodRequest(
           id: request.id,
           patientName: request.patientName,
@@ -87,7 +74,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
           status: 'accepted',
           createdAt: request.createdAt,
           requesterName: request.requesterName,
-          donorId: user.id, // Update donorId locally
+          donorId: user.id,
         );
       });
 
@@ -96,8 +83,6 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Request accepted successfully! Thank you for your help.')),
       );
-      
-      // Navigator.pop(context); // Stay on page to show accepted status
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -152,6 +137,9 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final isEligible = user?.isEligible ?? false;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
@@ -164,6 +152,24 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
         : SingleChildScrollView(
         child: Column(
           children: [
+            if (!isEligible && request.status == 'pending')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                color: Colors.orange.shade100,
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.orange),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You are currently ineligible to donate due to the waiting period.',
+                        style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             _buildUrgencyBanner(),
             _buildPatientInfoSection(),
             _buildMedicalContextSection(),
@@ -173,7 +179,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildActionButtons(),
+      bottomNavigationBar: _buildActionButtons(isEligible),
     );
   }
 
@@ -331,7 +337,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
     );
   }
   
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(bool isEligible) {
     final user = Provider.of<AuthProvider>(context).user;
     final isMyAcceptedRequest = request.status == 'accepted' && user != null && request.donorId == user.id;
 
@@ -350,14 +356,22 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _acceptRequest,
+                  onPressed: isEligible ? _acceptRequest : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD32F2F),
+                    disabledBackgroundColor: Colors.grey.shade300,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 3,
+                    elevation: isEligible ? 3 : 0,
                   ),
-                  child: const Text('ACCEPT REQUEST', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text(
+                    isEligible ? 'ACCEPT REQUEST' : 'NOT ELIGIBLE',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isEligible ? Colors.white : Colors.grey.shade600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -411,26 +425,14 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                 ),
               ),
             ),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _makePhoneCall(request.contactNumber),
-                  icon: const Icon(Icons.call, size: 18),
-                  label: const Text('Call Hospital'),
-                  style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFD32F2F), side: const BorderSide(color: Color(0xFFD32F2F)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _sendSMS(request.patientPhone),
-                  icon: const Icon(Icons.message, size: 18),
-                  label: const Text('Message'),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
-                ),
-              ),
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _makePhoneCall(request.contactNumber),
+              icon: const Icon(Icons.call, size: 18),
+              label: const Text('Call Hospital'),
+              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFD32F2F), side: const BorderSide(color: Color(0xFFD32F2F)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
+            ),
           ),
         ],
       ),

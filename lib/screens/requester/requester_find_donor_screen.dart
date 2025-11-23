@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/donor_model.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/screens/requester/requester_donor_profile_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RequesterFindDonorScreen extends StatefulWidget {
   const RequesterFindDonorScreen({super.key});
@@ -22,8 +23,13 @@ class _RequesterFindDonorScreenState extends State<RequesterFindDonorScreen> {
   }
 
   Future<List<Donor>> _fetchDonors() async {
-    final donorsJson = await ApiService().getDonors();
-    return donorsJson.map((json) => Donor.fromJson(json)).toList();
+    try {
+      final donorsJson = await ApiService().getDonors();
+      return donorsJson.map((json) => Donor.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching donors: $e');
+      return [];
+    }
   }
 
   @override
@@ -32,7 +38,8 @@ class _RequesterFindDonorScreenState extends State<RequesterFindDonorScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Text('Find Donors'),
+        title: const Text('Find Donors', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: Colors.white,
       body: Column(
@@ -56,8 +63,12 @@ class _RequesterFindDonorScreenState extends State<RequesterFindDonorScreen> {
                 final filteredDonors = _selectedBloodGroup == 'All'
                     ? allDonors
                     : allDonors
-                          .where((d) => d.bloodGroup == _selectedBloodGroup)
-                          .toList();
+                        .where((d) => d.bloodGroup == _selectedBloodGroup)
+                        .toList();
+                
+                if (filteredDonors.isEmpty) {
+                  return const Center(child: Text('No donors found for this blood group.'));
+                }
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -129,6 +140,18 @@ class DonorCard extends StatelessWidget {
   final Donor donor;
   const DonorCard({super.key, required this.donor});
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      throw 'Could not launch $launchUri';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -155,7 +178,7 @@ class DonorCard extends StatelessWidget {
                 _buildAvatar(),
                 const SizedBox(width: 16),
                 _buildMiddleSection(),
-                _buildContactButton(),
+                _buildContactButton(context),
               ],
             ),
           ),
@@ -227,25 +250,32 @@ class DonorCard extends StatelessWidget {
             children: [
               const Icon(Icons.location_on, color: Color(0xFFD32F2F), size: 14),
               const SizedBox(width: 4),
-              Text(
-                donor.location,
-                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+              Expanded(
+                child: Text(
+                  donor.location,
+                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'Last donation: ${donor.lastDonationMonthsAgo} months ago • ${donor.totalDonations} donations',
-            style: const TextStyle(color: Colors.grey, fontSize: 11),
-          ),
+          // Assuming these fields might not be in the immediate response or need to be calculated
+          if (donor.totalDonations > 0)
+            Text(
+              '${donor.totalDonations} donations',
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildContactButton() {
+  Widget _buildContactButton(BuildContext context) {
     return ElevatedButton.icon(
-      onPressed: donor.isAvailable ? () {} : null,
+      onPressed: (donor.isAvailable && donor.phone != null && donor.phone!.isNotEmpty) 
+        ? () => _makePhoneCall(donor.phone!) 
+        : null,
       icon: const Icon(Icons.phone, size: 16),
       label: const Text('Contact'),
       style: ElevatedButton.styleFrom(

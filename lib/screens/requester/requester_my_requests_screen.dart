@@ -46,46 +46,6 @@ class _RequesterMyRequestsScreenState extends State<RequesterMyRequestsScreen> {
     }
   }
 
-  Future<void> _deleteRequest(String requestId) async {
-    // Implement delete functionality if API supports it
-    // For now, just show a message or call an API
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Request'),
-        content: const Text('Are you sure you want to delete this request? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-         await ApiService().delete('blood-requests/$requestId');
-         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Request deleted successfully')),
-           );
-           _fetchMyRequests();
-         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: $e')),
-          );
-        }
-      }
-    }
-  }
-
   Future<void> _cancelRequest(String requestId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -258,11 +218,11 @@ class _RequesterMyRequestsScreenState extends State<RequesterMyRequestsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  SizedBox(
+                                   if (request.status == 'pending' || request.status == 'accepted') ...[
+                                    const SizedBox(height: 16),
+                                    SizedBox(
                                     width: double.infinity,
-                                    child: request.status == 'pending' || request.status == 'accepted'
-                                        ? OutlinedButton.icon(
+                                    child: OutlinedButton.icon(
                                             onPressed: () => _cancelRequest(request.id),
                                             icon: const Icon(Icons.cancel_outlined),
                                             label: const Text('Cancel Request'),
@@ -270,17 +230,9 @@ class _RequesterMyRequestsScreenState extends State<RequesterMyRequestsScreen> {
                                               foregroundColor: Colors.orange,
                                               side: const BorderSide(color: Colors.orange),
                                             ),
-                                          )
-                                        : OutlinedButton.icon(
-                                            onPressed: () => _deleteRequest(request.id),
-                                            icon: const Icon(Icons.delete_outline),
-                                            label: const Text('Delete Request'),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.red,
-                                              side: const BorderSide(color: Colors.red),
-                                            ),
                                           ),
-                                  ),
+                                  ), 
+                                  ]
                                 ],
                               ),
                             ),

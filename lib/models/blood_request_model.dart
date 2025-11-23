@@ -32,22 +32,25 @@ class BloodRequest {
   });
 
   factory BloodRequest.fromJson(Map<String, dynamic> json) {
+    // Map 'unitsRequired' from HospitalBloodRequest to 'units'
+    // Map 'notes' from HospitalBloodRequest to 'additionalDetails'
+    
     return BloodRequest(
       id: json['_id'] ?? '',
       patientName: json['patientName'] ?? '',
       patientPhone: json['patientPhone'] ?? '',
       bloodGroup: json['bloodGroup'] ?? '',
-      hospitalName: json['hospitalName'] ?? '',
-      location: json['location'] ?? '',
-      contactNumber: json['contactNumber'] ?? '',
-      additionalDetails: json['additionalDetails'],
-      units: json['units'] ?? 1,
-      notifyViaEmergency: json['notifyViaEmergency'] ?? false,
+      hospitalName: json['hospitalName'] ?? (json['hospital'] is Map ? json['hospital']['hospitalName'] : ''),
+      location: json['location'] ?? (json['hospital'] is Map ? json['hospital']['address'] : ''),
+      contactNumber: json['contactNumber'] ?? (json['hospital'] is Map ? json['hospital']['phoneNumber'] : ''),
+      additionalDetails: json['additionalDetails'] ?? json['notes'],
+      units: json['units'] ?? json['unitsRequired'] ?? 1,
+      notifyViaEmergency: json['notifyViaEmergency'] ?? (json['urgency'] == 'critical' || json['urgency'] == 'high'),
       status: json['status'] ?? 'pending',
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       requesterName: json['requester'] != null && json['requester'] is Map 
           ? json['requester']['fullName'] 
-          : null,
+          : (json['hospital'] is Map ? json['hospital']['hospitalName'] : null),
       donorId: json['donor'] is String ? json['donor'] : (json['donor'] != null && json['donor'] is Map ? json['donor']['_id'] : null),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/blood_request_model.dart';
 import 'package:jeevandhara/screens/donor/donor_request_details_page.dart';
 import 'package:jeevandhara/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
 
 class DonorRequestsPage extends StatefulWidget {
   const DonorRequestsPage({super.key});
@@ -11,7 +13,6 @@ class DonorRequestsPage extends StatefulWidget {
 }
 
 class _DonorRequestsPageState extends State<DonorRequestsPage> {
-  String? _selectedBloodGroup;
   List<BloodRequest> _requests = [];
   bool _isLoading = true;
   String? _error;
@@ -28,9 +29,23 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
         _isLoading = true;
         _error = null;
       });
+      
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      final userBloodGroup = user?.bloodGroup;
+
       final data = await ApiService().getAllBloodRequests();
+      final allRequests = (data as List).map((json) => BloodRequest.fromJson(json)).toList();
+      
+      // Filter pending requests matching user's blood group
+      final filtered = allRequests.where((r) {
+        // Strict filtering as requested: "only show the blood requests of the blood type of users"
+        bool matchGroup = userBloodGroup != null && r.bloodGroup == userBloodGroup;
+        bool isPending = r.status == 'pending';
+        return matchGroup && isPending;
+      }).toList();
+
       setState(() {
-        _requests = (data as List).map((json) => BloodRequest.fromJson(json)).toList();
+        _requests = filtered;
         _isLoading = false;
       });
     } catch (e) {
@@ -39,13 +54,6 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
         _isLoading = false;
       });
     }
-  }
-
-  List<BloodRequest> get _filteredRequests {
-    if (_selectedBloodGroup == null) {
-      return _requests;
-    }
-    return _requests.where((r) => r.bloodGroup == _selectedBloodGroup).toList();
   }
 
   String _getTimeAgo(DateTime dateTime) {
@@ -73,37 +81,18 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         title: const Text('Nearby Blood Requests'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  icon: Icon(Icons.search, color: Colors.grey),
-                  hintText: 'Search by city or blood group',
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-          ),
-        ),
+        // Removed search bar from bottom of AppBar
       ),
       body: Column(
         children: [
-          _buildFilterChips(),
+          // Removed _buildFilterChips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               children: [
                 const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
                 const SizedBox(width: 4),
-                Text('${_filteredRequests.length} requests found', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('${_requests.length} requests matching your blood type', style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),
@@ -114,52 +103,18 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
                     ? Center(child: Text('Error: $_error'))
                     : RefreshIndicator(
                         onRefresh: _fetchRequests,
-                        child: _filteredRequests.isEmpty
-                            ? const Center(child: Text('No requests found'))
+                        child: _requests.isEmpty
+                            ? const Center(child: Text('No matching requests found'))
                             : ListView.builder(
                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                itemCount: _filteredRequests.length,
+                                itemCount: _requests.length,
                                 itemBuilder: (context, index) {
-                                  return _buildRequestCard(_filteredRequests[index]);
+                                  return _buildRequestCard(_requests[index]);
                                 },
                               ),
                       ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
-    final bloodGroups = ['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: SizedBox(
-        height: 35,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: bloodGroups.length,
-          itemBuilder: (context, index) {
-            final group = bloodGroups[index];
-            final isSelected = _selectedBloodGroup == group;
-            return ChoiceChip(
-              label: Text(group),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedBloodGroup = selected ? group : null;
-                });
-              },
-              selectedColor: const Color(0xFFD32F2F),
-              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-              backgroundColor: const Color(0xFFF0F0F0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              side: BorderSide.none,
-            );
-          },
-          separatorBuilder: (context, index) => const SizedBox(width: 8),
-        ),
       ),
     );
   }

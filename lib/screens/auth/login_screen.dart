@@ -5,6 +5,8 @@ import 'package:jeevandhara/screens/auth/forgot_password_screen.dart';
 import 'package:jeevandhara/screens/auth/user_selection_screen.dart';
 import 'package:jeevandhara/screens/main_screen.dart';
 import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
+import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
+import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +51,16 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const DonorMainScreen()),
+            );
+          } else if (user.userType == 'hospital') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HospitalMainScreen()),
+            );
+          } else if (user.userType == 'blood_bank') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const BloodBankMainScreen()),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
