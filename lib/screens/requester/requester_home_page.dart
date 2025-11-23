@@ -1,11 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/requester/requester_blood_bank_screen.dart';
+import 'package:jeevandhara/screens/map/blood_bank_request_map_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_emergency_delivery_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_find_donor_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_post_blood_request_screen.dart';
 
 class RequesterHomePage extends StatefulWidget {
-  const RequesterHomePage({super.key});
+  final User user;
+
+  const RequesterHomePage({super.key, required this.user});
 
   @override
   State<RequesterHomePage> createState() => _RequesterHomePageState();
@@ -31,12 +34,13 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
   }
 
   Widget _buildHeader() {
+    // ... This widget is fine, no changes needed ...
     return SizedBox(
-      height: 200, // Reduced height
+      height: 200,
       child: Stack(
         children: [
           Container(
-            height: 180, // Reduced height
+            height: 180,
             decoration: const BoxDecoration(
               color: Color(0xFFD32F2F),
               borderRadius: BorderRadius.only(
@@ -59,7 +63,11 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                   children: const [
                     Text(
                       'Jeevan Dhara',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -74,7 +82,11 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.water_drop, color: Color(0xFFD32F2F), size: 28),
+                  child: const Icon(
+                    Icons.water_drop,
+                    color: Color(0xFFD32F2F),
+                    size: 28,
+                  ),
                 ),
               ],
             ),
@@ -89,7 +101,13 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: const TextField(
                 decoration: InputDecoration(
@@ -116,51 +134,85 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
         mainAxisSpacing: 16,
         children: [
           _buildFeatureCard(
-              title: 'Post Blood Request',
-              subtitle: 'Create urgent request',
-              icon: Icons.add,
-              iconColor: Colors.white,
-              textColor: Colors.white,
-              backgroundColor: const Color(0xFFD32F2F),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterPostBloodRequestScreen()));
-              }),
+            title: 'Post Blood Request',
+            subtitle: 'Create urgent request',
+            icon: Icons.add,
+            iconColor: Colors.white,
+            textColor: Colors.white,
+            backgroundColor: const Color(0xFFD32F2F),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RequesterPostBloodRequestScreen(),
+                ),
+              );
+            },
+          ),
           _buildFeatureCard(
-              title: 'Find Donor',
-              subtitle: 'Search nearby donors',
-              icon: Icons.people_outline,
-              iconColor: const Color(0xFFD32F2F),
-              textColor: Colors.black87,
-              backgroundColor: const Color(0xFFFFF5F5),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterFindDonorScreen()));
-              }),
+            title: 'Find Donor',
+            subtitle: 'Search nearby donors',
+            icon: Icons.people_outline,
+            iconColor: const Color(0xFFD32F2F),
+            textColor: Colors.black87,
+            backgroundColor: const Color(0xFFFFF5F5),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RequesterFindDonorScreen(),
+                ),
+              );
+            },
+          ),
           _buildFeatureCard(
-              title: 'Nearby Blood Banks',
-              subtitle: 'Locate blood banks',
-              icon: Icons.home_work_outlined,
-              iconColor: const Color(0xFFD32F2F),
-              textColor: Colors.black87,
-              backgroundColor: const Color(0xFFFFF5F5),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterBloodBankScreen()));
-              }),
+            title: 'Nearby Blood Banks',
+            subtitle: 'Locate blood banks',
+            icon: Icons.home_work_outlined,
+            iconColor: const Color(0xFFD32F2F),
+            textColor: Colors.black87,
+            backgroundColor: const Color(0xFFFFF5F5),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BloodBankRequestMapScreen(),
+                ),
+              );
+            },
+          ),
           _buildFeatureCard(
-              title: 'Emergency Delivery',
-              subtitle: 'Request fast delivery',
-              icon: Icons.local_shipping_outlined,
-              iconColor: Colors.white,
-              textColor: Colors.white,
-              backgroundColor: const Color(0xFFC62828),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const RequesterEmergencyDeliveryScreen()));
-              }),
+            title: 'Emergency Delivery',
+            subtitle: 'Request fast delivery',
+            icon: Icons.local_shipping_outlined,
+            iconColor: Colors.white,
+            textColor: Colors.white,
+            backgroundColor: const Color(0xFFC62828),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                  const RequesterEmergencyDeliveryScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureCard({required String title, required String subtitle, required IconData icon, required Color iconColor, required Color textColor, required Color backgroundColor, VoidCallback? onTap}) {
+  // ... The rest of the file is unchanged and correct ...
+  Widget _buildFeatureCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color textColor,
+    required Color backgroundColor,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -168,7 +220,13 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -176,9 +234,19 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           children: [
             Icon(icon, color: iconColor, size: 36),
             const SizedBox(height: 10),
-            Text(title, style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12)),
+            Text(
+              subtitle,
+              style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -194,8 +262,17 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Recent Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              TextButton(onPressed: () {}, child: const Text('View All', style: TextStyle(color: Color(0xFFD32F2F)))),
+              const Text(
+                'Recent Requests',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'View All',
+                  style: TextStyle(color: Color(0xFFD32F2F)),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -204,13 +281,22 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFD32F2F).withOpacity(0.1)),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFD32F2F).withOpacity(0.1),
+                  ),
                   child: const Icon(Icons.water_drop, color: Color(0xFFD32F2F)),
                 ),
                 const SizedBox(width: 12),
@@ -221,22 +307,68 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
-                          Text('Ramesh Kumar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text('2 units', style: TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.bold)),
+                          Text(
+                            'Ramesh Kumar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '2 units',
+                            style: TextStyle(
+                              color: Color(0xFFD32F2F),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _buildPillTag('O+', const Color(0xFFD32F2F), Colors.white),
+                          _buildPillTag(
+                            'O+',
+                            const Color(0xFFD32F2F),
+                            Colors.white,
+                          ),
                           const SizedBox(width: 6),
-                          _buildPillTag('Critical', const Color(0xFFC62828), Colors.white),
+                          _buildPillTag(
+                            'Critical',
+                            const Color(0xFFC62828),
+                            Colors.white,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Row(children: [const Icon(Icons.location_on, color: Colors.grey, size: 16), const SizedBox(width: 4), const Text('Kathmandu Medical College', style: TextStyle(color: Colors.grey, fontSize: 12))]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Kathmandu Medical College',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 4),
-                      Row(children: [const Icon(Icons.access_time, color: Colors.grey, size: 16), const SizedBox(width: 4), const Text('15 min ago', style: TextStyle(color: Colors.grey, fontSize: 12))]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '15 min ago',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -251,8 +383,18 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
   Widget _buildPillTag(String text, Color backgroundColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

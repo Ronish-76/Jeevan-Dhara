@@ -6,12 +6,8 @@ class HospitalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hospital Page'),
-      ),
-      body: const Center(
-        child: Text('This is the Hospital Page'),
-      ),
+      appBar: AppBar(title: const Text('Hospital Page')),
+      body: const Center(child: Text('This is the Hospital Page')),
     );
   }
 }

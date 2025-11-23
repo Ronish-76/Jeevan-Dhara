@@ -13,7 +13,10 @@ class DonorProfilePage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.edit_outlined, color: Colors.white)),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -40,17 +43,37 @@ class DonorProfilePage extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
       ),
       child: const Column(
         children: [
-          CircleAvatar(radius: 40, backgroundColor: Colors.white, child: Icon(Icons.person, size: 50, color: Color(0xFFD32F2F))),
+          CircleAvatar(
+            radius: 40,
+            backgroundColor: Colors.white,
+            child: Icon(Icons.person, size: 50, color: Color(0xFFD32F2F)),
+          ),
           SizedBox(height: 12),
-          Text('Rajesh Kumar', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+          Text(
+            'Rajesh Kumar',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           SizedBox(height: 4),
-          Text('Blood Group: A+', style: TextStyle(color: Colors.white70, fontSize: 14)),
+          Text(
+            'Blood Group: A+',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
           SizedBox(height: 8),
-          Text('Member since January 2022', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(
+            'Member since January 2022',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -77,7 +100,10 @@ class DonorProfilePage extends StatelessWidget {
         children: [
           Icon(icon, color: const Color(0xFFD32F2F), size: 28),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
           Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         ],
@@ -87,20 +113,29 @@ class DonorProfilePage extends StatelessWidget {
 
   Widget _buildEligibilityCard() {
     return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9), // Light Green
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF4CAF50))),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50)),
-            SizedBox(width: 12),
-            Text('Eligible to Donate', style: TextStyle(color: Color(0xFF388E3C), fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ));
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9), // Light Green
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4CAF50)),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50)),
+          SizedBox(width: 12),
+          Text(
+            'Eligible to Donate',
+            style: TextStyle(
+              color: Color(0xFF388E3C),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInfoCard() {
@@ -109,34 +144,69 @@ class DonorProfilePage extends StatelessWidget {
       children: [
         _buildInfoRow(Icons.phone_outlined, 'Phone Number', '+977 9841234567'),
         _buildInfoRow(Icons.email_outlined, 'Email', 'rajesh.kumar@email.com'),
-        _buildInfoRow(Icons.location_on_outlined, 'Location', 'Kathmandu, Nepal'),
-        _buildInfoRow(Icons.calendar_today_outlined, 'Last Donation', 'March 15, 2024'),
+        _buildInfoRow(
+          Icons.location_on_outlined,
+          'Location',
+          'Kathmandu, Nepal',
+        ),
+        _buildInfoRow(
+          Icons.calendar_today_outlined,
+          'Last Donation',
+          'March 15, 2024',
+        ),
       ],
     );
   }
 
   Widget _buildAccountManagementCard(BuildContext context) {
     return _buildSectionCard(
-        title: 'Account Management',
-        children: [
-          _buildManagementRow(Icons.notifications_outlined, 'Notifications', trailing: Switch(value: true, onChanged: (val) {}, activeColor: const Color(0xFFD32F2F))),
-          _buildManagementRow(Icons.share_outlined, 'Share Jeevan Dhara'),
-          _buildManagementRow(Icons.history_outlined, 'View Donation History', onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const DonorDonationHistoryPage()));
-          }),
-          const Divider(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-              label: const Text('Log Out', style: TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.bold)),
+      title: 'Account Management',
+      children: [
+        _buildManagementRow(
+          Icons.notifications_outlined,
+          'Notifications',
+          trailing: Switch(
+            value: true,
+            onChanged: (val) {},
+            activeColor: const Color(0xFFD32F2F),
+          ),
+        ),
+        _buildManagementRow(Icons.share_outlined, 'Share Jeevan Dhara'),
+        _buildManagementRow(
+          Icons.history_outlined,
+          'View Donation History',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DonorDonationHistoryPage(),
+              ),
+            );
+          },
+        ),
+        const Divider(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
+            label: const Text(
+              'Log Out',
+              style: TextStyle(
+                color: Color(0xFFD32F2F),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ]);
+        ),
+      ],
+    );
   }
 
-  Widget _buildSectionCard({required String title, required List<Widget> children}) {
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -147,7 +217,10 @@ class DonorProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             ...children,
           ],
@@ -171,11 +244,18 @@ class DonorProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildManagementRow(IconData icon, String label, {Widget? trailing, VoidCallback? onTap}) {
+  Widget _buildManagementRow(
+    IconData icon,
+    String label, {
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       leading: Icon(icon, color: const Color(0xFF666666)),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-      trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      trailing:
+          trailing ??
+          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
     );

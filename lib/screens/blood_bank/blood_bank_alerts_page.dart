@@ -1,55 +1,176 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class BloodBankAlertsPage extends StatelessWidget {
+import '../../models/location_model.dart';
+import '../../viewmodels/inventory_viewmodel.dart';
+import '../../viewmodels/blood_request_viewmodel.dart';
+
+class BloodBankAlertsPage extends StatefulWidget {
   const BloodBankAlertsPage({super.key});
 
   @override
+  State<BloodBankAlertsPage> createState() => _BloodBankAlertsPageState();
+}
+
+class _BloodBankAlertsPageState extends State<BloodBankAlertsPage> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  Future<void> _loadData() async {
+    final bloodRequestViewModel = context.read<BloodRequestViewModel>();
+    final inventoryViewModel = context.read<InventoryViewModel>();
+    await Future.wait([
+      bloodRequestViewModel.fetchActiveRequests(forceRefresh: true),
+      inventoryViewModel.fetchNearbyFacilities(role: UserRole.bloodBank),
+    ]);
+    if (mounted) {
+      setState(() => _initialized = true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bloodRequestViewModel = context.watch<BloodRequestViewModel>();
+    final inventoryViewModel = context.watch<InventoryViewModel>();
+    final facility = inventoryViewModel.nearbyFacilities.isNotEmpty
+        ? inventoryViewModel.nearbyFacilities.first
+        : null;
+
+    final criticalAlerts = _buildCriticalAlerts(facility, bloodRequestViewModel);
+    final highPriority = _buildHighPriorityAlerts(facility);
+    final informational = _buildInformationalAlerts(bloodRequestViewModel);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         foregroundColor: Colors.white,
-        title: const Text('Alerts & Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text(
+          'Alerts & Notifications',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+          IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildAlertsSection(
-            title: 'Critical Alerts',
-            icon: Icons.error,
-            color: const Color(0xFFF44336),
-            alerts: [
-              _AlertInfo('Critical Low Stock', 'O- blood below 5 units. Emergency replenishment needed.', '5m ago'),
-              _AlertInfo('Equipment Failure', 'Refrigerator Unit #3 temperature out of range.', '30m ago'),
-            ],
-          ),
-          _buildAlertsSection(
-            title: 'High Priority Alerts',
-            icon: Icons.warning,
-            color: const Color(0xFFFF9800),
-            alerts: [
-              _AlertInfo('Pending Verifications', '12 donations awaiting screening for over 4 hours.', '1h ago'),
-              _AlertInfo('Expiry Warning', '20 units of A+ expiring in 48 hours.', '2h ago'),
-            ],
-          ),
-           _buildAlertsSection(
-            title: 'Informational',
-            icon: Icons.info,
-            color: const Color(0xFF2196F3),
-            alerts: [
-              _AlertInfo('New Donation', '1 unit of B+ received from donor DN-103.', '3h ago'),
-              _AlertInfo('Distribution Completed', 'Order #HOS-543 delivered to Bir Hospital.', '4h ago'),
-            ],
-          ),
-        ],
-      ),
+      body: _initialized && inventoryViewModel.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  if (criticalAlerts.isNotEmpty)
+                    _buildAlertsSection(
+                      title: 'Critical Alerts',
+                      icon: Icons.error,
+                      color: const Color(0xFFF44336),
+                      alerts: criticalAlerts,
+                    ),
+                  if (highPriority.isNotEmpty)
+                    _buildAlertsSection(
+                      title: 'High Priority Alerts',
+                      icon: Icons.warning,
+                      color: const Color(0xFFFF9800),
+                      alerts: highPriority,
+                    ),
+                  if (informational.isNotEmpty)
+                    _buildAlertsSection(
+                      title: 'Informational',
+                      icon: Icons.info,
+                      color: const Color(0xFF2196F3),
+                      alerts: informational,
+                    ),
+                  if (criticalAlerts.isEmpty &&
+                      highPriority.isEmpty &&
+                      informational.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              size: 64,
+                              color: Colors.green,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No alerts at this time',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
+  }
+
+  List<_AlertInfo> _buildCriticalAlerts(facility, BloodRequestViewModel provider) {
+    final alerts = <_AlertInfo>[];
+    final criticalStock =
+        facility?.inventory?.entries
+            .where((entry) => entry.value < 5)
+            .toList() ??
+        [];
+    for (final entry in criticalStock) {
+      alerts.add(
+        _AlertInfo(
+          'Critical Low Stock',
+          '${entry.key} blood below ${entry.value} units. Emergency replenishment needed.',
+          'Just now',
+        ),
+      );
+    }
+    return alerts;
+  }
+
+  List<_AlertInfo> _buildHighPriorityAlerts(facility) {
+    final alerts = <_AlertInfo>[];
+    final lowStock =
+        facility?.inventory?.entries
+            .where((entry) => entry.value >= 5 && entry.value < 15)
+            .toList() ??
+        [];
+    if (lowStock.isNotEmpty) {
+      alerts.add(
+        _AlertInfo(
+          'Low Stock Warning',
+          '${lowStock.length} blood type(s) below recommended levels.',
+          'Recently',
+        ),
+      );
+    }
+    return alerts;
+  }
+
+  List<_AlertInfo> _buildInformationalAlerts(BloodRequestViewModel provider) {
+    final alerts = <_AlertInfo>[];
+    final pending = provider.requests
+        .where((r) => r.status == 'pending')
+        .length;
+    if (pending > 0) {
+      alerts.add(
+        _AlertInfo(
+          'Pending Requests',
+          '$pending blood request(s) awaiting response.',
+          'Recently',
+        ),
+      );
+    }
+    return alerts;
   }
 
   Widget _buildAlertsSection({
@@ -58,6 +179,7 @@ class BloodBankAlertsPage extends StatelessWidget {
     required Color color,
     required List<_AlertInfo> alerts,
   }) {
+    if (alerts.isEmpty) return const SizedBox.shrink();
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 16),
@@ -70,7 +192,14 @@ class BloodBankAlertsPage extends StatelessWidget {
               children: [
                 Icon(icon, color: color),
                 const SizedBox(width: 8),
-                Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
               ],
             ),
           ),
@@ -85,7 +214,9 @@ class BloodBankAlertsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -93,9 +224,18 @@ class BloodBankAlertsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(alert.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  alert.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(alert.description, style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                Text(
+                  alert.description,
+                  style: const TextStyle(color: Colors.black87, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -103,11 +243,18 @@ class BloodBankAlertsPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(alert.time, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+              Text(
+                alert.time,
+                style: const TextStyle(color: Colors.grey, fontSize: 10),
+              ),
               const SizedBox(height: 8),
-              Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade400),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.grey.shade400,
+              ),
             ],
-          )
+          ),
         ],
       ),
     );

@@ -1,0 +1,276 @@
+{
+    "namingInconsistencies":  [
+                                  "Backend uses snake_case \u0027blood_bank\u0027 while Flutter models expect camelCase \u0027bloodBank\u0027",
+                                  "Routes mix /map/nearby and /locations/nearby names"
+                              ],
+    "envKeysUsed":  [
+                        "NODE_ENV",
+                        "GOOGLE_MAPS_API_KEY",
+                        "PORT",
+                        "MONGO_URI"
+                    ],
+    "brokenImports":  [
+                          "lib/widgets/map/custom_marker_icon.dart is missing dart:ui import, causing PictureRecorder undefined errors"
+                      ],
+    "flutterScreens":  [
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\main_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\blood_bank_registration_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\donor_registration_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\forgot_password_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\hospital_registration_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\login_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\register_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\requester_registration_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\auth\\user_selection_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\analytics_reports_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\bank_dashboard.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\blood_bank_alerts_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\blood_bank_home_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\blood_bank_main_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\blood_bank_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\blood_bank_profile_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\delivery_tracking_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\distribute_blood_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\donation_history_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\manage_inventory_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\manage_stock_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\receive_donations_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\blood_bank\\track_requests_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\common\\home_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\common\\profile_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\common\\splash_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donation_history_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_alerts_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_dashboard.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_donation_history_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_home_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_main_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_profile_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_profile_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_requests_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\donor\\donor_request_details_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\blood_request_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_alerts_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_dashboard.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_emergency_request_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_find_donors_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_home_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_main_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_manage_stock_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_post_blood_request_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_profile_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_requests_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\hospital\\hospital_stock_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\blood_bank_request_map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\donor_request_map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\hospital_request_map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\patient_map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\map\\patient_request_map_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_alerts_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_blood_bank_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_donor_profile_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_emergency_delivery_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_find_donor_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_home_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_post_blood_request_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\requester\\requester_profile_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\alerts_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\donor_search_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\emergency_delivery_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\find_donor_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\post_blood_request_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\requester_page.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\request_blood_screen.dart",
+                           "C:\\Users\\lenin\\StudioProjects\\Jeevan-Dhara\\lib\\screens\\user\\user_dashboard.dart"
+                       ],
+    "geoIndexMissing":  [
+
+                        ],
+    "duplicateSchemas":  [
+                             "location.controller.js vs map.controller.js both implement /nearby logic",
+                             "Flutter has both legacy map_screen and new role-specific patient/donor/bank/hospital screens"
+                         ],
+    "expressRoutes":  [
+                          {
+                              "method":  "POST",
+                              "path":  "/locations/seed",
+                              "file":  "server/src/routes/location.routes.js",
+                              "controller":  "seedLocations"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/locations/nearby",
+                              "file":  "server/src/routes/location.routes.js",
+                              "controller":  "getNearbyLocations"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/locations/bloodbanks/:id/inventory",
+                              "file":  "server/src/routes/location.routes.js",
+                              "controller":  "getBloodBankInventory"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/map/nearby",
+                              "file":  "server/src/routes/map.routes.js",
+                              "controller":  "getNearbyLocations (legacy)"
+                          },
+                          {
+                              "method":  "POST",
+                              "path":  "/requests/create-from-map",
+                              "file":  "server/src/routes/bloodRequest.routes.js",
+                              "controller":  "createRequestFromMap"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/requests",
+                              "file":  "server/src/routes/bloodRequest.routes.js",
+                              "controller":  "getBloodRequests"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/requests/urgent",
+                              "file":  "server/src/routes/bloodRequest.routes.js",
+                              "controller":  "getUrgentRequests"
+                          },
+                          {
+                              "method":  "POST",
+                              "path":  "/donor/accept-request",
+                              "file":  "server/src/routes/donor.routes.js",
+                              "controller":  "acceptRequest"
+                          },
+                          {
+                              "method":  "GET",
+                              "path":  "/routes/supply",
+                              "file":  "server/src/routes/route.routes.js",
+                              "controller":  "getSupplyRoutes"
+                          }
+                      ],
+    "unusedFiles":  [
+                        "lib/screens/map/map_screen.dart",
+                        "server/src/controllers/map.controller.js"
+                    ],
+    "files":  [
+                  {
+                      "path":  "server/src/app.js",
+                      "purpose":  "Configures middleware, mounts routes",
+                      "type":  "express app"
+                  },
+                  {
+                      "path":  "server/src/controllers/location.controller.js",
+                      "purpose":  "Seed locations, nearby lookup, inventory",
+                      "type":  "controller"
+                  },
+                  {
+                      "path":  "server/src/controllers/map.controller.js",
+                      "purpose":  "Legacy /nearby endpoint duplicate",
+                      "type":  "controller"
+                  },
+                  {
+                      "path":  "server/src/controllers/bloodRequest.controller.js",
+                      "purpose":  "Create + list blood requests",
+                      "type":  "controller"
+                  },
+                  {
+                      "path":  "server/src/controllers/donor.controller.js",
+                      "purpose":  "Donor accept request",
+                      "type":  "controller"
+                  },
+                  {
+                      "path":  "server/src/controllers/route.controller.js",
+                      "purpose":  "Supply route aggregation",
+                      "type":  "controller"
+                  },
+                  {
+                      "path":  "server/src/models/location.model.js",
+                      "purpose":  "Locations with inventory+geo",
+                      "type":  "mongoose model"
+                  },
+                  {
+                      "path":  "server/src/models/bloodRequest.model.js",
+                      "purpose":  "Blood request records",
+                      "type":  "mongoose model"
+                  },
+                  {
+                      "path":  "server/src/models/donation.model.js",
+                      "purpose":  "Donation records",
+                      "type":  "mongoose model"
+                  },
+                  {
+                      "path":  "server/src/models/user.model.js",
+                      "purpose":  "Users with roles",
+                      "type":  "mongoose model"
+                  },
+                  {
+                      "path":  "lib/screens/map/map_screen.dart",
+                      "purpose":  "Legacy map UI",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/screens/map/patient_map_screen.dart",
+                      "purpose":  "Patient-focused legacy map",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/screens/map/patient_request_map_screen.dart",
+                      "purpose":  "New patient request map",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/screens/map/donor_request_map_screen.dart",
+                      "purpose":  "New donor map",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/screens/map/blood_bank_request_map_screen.dart",
+                      "purpose":  "New blood bank map",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/screens/map/hospital_request_map_screen.dart",
+                      "purpose":  "New hospital map",
+                      "type":  "flutter screen"
+                  },
+                  {
+                      "path":  "lib/services/map_service.dart",
+                      "purpose":  "REST client for map APIs",
+                      "type":  "flutter service"
+                  },
+                  {
+                      "path":  "lib/utils/maps_helper.dart",
+                      "purpose":  "Distance + navigation helpers",
+                      "type":  "flutter util"
+                  },
+                  {
+                      "path":  "lib/widgets/map/custom_marker_icon.dart",
+                      "purpose":  "Builds marker bitmaps",
+                      "type":  "flutter widget"
+                  },
+                  {
+                      "path":  "lib/widgets/map/location_bottom_sheet.dart",
+                      "purpose":  "Draggable info sheet",
+                      "type":  "flutter widget"
+                  }
+              ],
+    "mongoModels":  [
+                        "server/src/models/location.model.js",
+                        "server/src/models/bloodRequest.model.js",
+                        "server/src/models/donation.model.js",
+                        "server/src/models/user.model.js"
+                    ],
+    "existingMapCode":  [
+                            "lib/screens/map/map_screen.dart",
+                            "lib/screens/map/patient_map_screen.dart",
+                            "lib/screens/map/patient_request_map_screen.dart",
+                            "lib/screens/map/donor_request_map_screen.dart",
+                            "lib/screens/map/blood_bank_request_map_screen.dart",
+                            "lib/screens/map/hospital_request_map_screen.dart",
+                            "lib/services/map_service.dart",
+                            "lib/utils/maps_helper.dart",
+                            "lib/widgets/marker_sheet.dart",
+                            "lib/widgets/map/*"
+                        ]
+}

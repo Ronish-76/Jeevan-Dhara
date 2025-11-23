@@ -1,9 +1,23 @@
-import 'dart:async';
-
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/auth/login_screen.dart';
+import 'package:jeevandhara/firebase_options.dart';
+import 'package:jeevandhara/screens/auth/auth_wrapper.dart';
+import 'package:jeevandhara/viewmodels/auth_viewmodel.dart';
+import 'package:provider/provider.dart';
 
-void main() {
+// FIX #1: Import all the other ViewModels your app will need.
+import 'package:jeevandhara/viewmodels/blood_request_viewmodel.dart';
+import 'package:jeevandhara/viewmodels/donor_viewmodel.dart';
+import 'package:jeevandhara/viewmodels/inventory_viewmodel.dart';
+import 'package:jeevandhara/viewmodels/donation_viewmodel.dart';
+
+
+void main() async {
+  // This setup is perfect. No changes needed here.
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -12,69 +26,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Jeevan Dhara',
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const SplashScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(
-      const Duration(seconds: 2),
-      () => Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Image.asset(
-              'assets/images/jeevan_dhara_logo.png',
-              height: 150.0,
-            ),
-            const SizedBox(height: 24.0),
-            const Text(
-              'Jeevan Dhara',
-              style: TextStyle(
-                fontSize: 40.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 12.0),
-            const Text(
-              'Connecting donors , saving lives',
-              style: TextStyle(
-                fontSize: 16.0,
-                color: Colors.black54,
-              ),
-            ),
-          ],
+    // FIX #2: Use MultiProvider to make all ViewModels available to the app.
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => BloodRequestViewModel()),
+        ChangeNotifierProvider(create: (_) => DonorViewModel()),
+        ChangeNotifierProvider(create: (_) => InventoryViewModel()),
+        ChangeNotifierProvider(create: (_) => DonationViewModel()),
+      ],
+      child: MaterialApp(
+        title: 'Jeevan Dhara',
+        // BEST PRACTICE: Use modern Material 3 theming.
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            elevation: 1,
+          ),
         ),
+        home: const AuthWrapper(),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

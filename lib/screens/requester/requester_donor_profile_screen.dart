@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/donor_model.dart';
 
+import '../user/find_donor_screen.dart';
+
 class RequesterDonorProfileScreen extends StatelessWidget {
   final Donor donor;
 
@@ -11,10 +13,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -45,7 +44,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
                 'Last Checkup': '2 months ago',
                 'Medical Conditions': 'None',
               },
-               icons: {
+              icons: {
                 'Blood Group': Icons.bloodtype_outlined,
                 'Health Status': Icons.health_and_safety_outlined,
                 'Last Checkup': Icons.event_note_outlined,
@@ -82,12 +81,20 @@ class RequesterDonorProfileScreen extends StatelessWidget {
             const CircleAvatar(
               radius: 60,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 80, color: Color(0xFFD32F2F)), // Placeholder
+              child: Icon(
+                Icons.person,
+                size: 80,
+                color: Color(0xFFD32F2F),
+              ), // Placeholder
             ),
             const SizedBox(height: 12),
             Text(
               donor.name,
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -95,7 +102,10 @@ class RequesterDonorProfileScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on, color: Colors.white70, size: 16),
                 const SizedBox(width: 4),
-                Text(donor.location, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                Text(
+                  donor.location,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
               ],
             ),
           ],
@@ -110,9 +120,21 @@ class RequesterDonorProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatCard('${donor.totalDonations}', 'Donations Made', Icons.bloodtype),
-          _buildStatCard('${donor.totalDonations * 3}', 'Lives Saved', Icons.favorite),
-          _buildStatCard('${donor.lastDonationMonthsAgo}m', 'Last Donation', Icons.calendar_today),
+          _buildStatCard(
+            '${donor.totalDonations}',
+            'Donations Made',
+            Icons.bloodtype,
+          ),
+          _buildStatCard(
+            '${donor.totalDonations * 3}',
+            'Lives Saved',
+            Icons.favorite,
+          ),
+          _buildStatCard(
+            '${donor.lastDonationMonthsAgo}m',
+            'Last Donation',
+            Icons.calendar_today,
+          ),
         ],
       ),
     );
@@ -123,14 +145,21 @@ class RequesterDonorProfileScreen extends StatelessWidget {
       children: [
         Icon(icon, color: const Color(0xFFD32F2F), size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildInfoCard({required String title, required Map<String, String> details, required Map<String, IconData> icons}) {
+  Widget _buildInfoCard({
+    required String title,
+    required Map<String, String> details,
+    required Map<String, IconData> icons,
+  }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 3,
@@ -141,26 +170,34 @@ class RequesterDonorProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 12),
-            ...details.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(icons[entry.key], color: Colors.grey, size: 20),
-                      const SizedBox(width: 12),
-                      Text('${entry.key}: ', style: const TextStyle(fontWeight: FontWeight.w500)),
-                      Flexible(
-                        child: Text(
-                          entry.value,
-                          style: const TextStyle(color: Color(0xFF666666)),
-                          softWrap: true,
-                        ),
+            ...details.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(icons[entry.key], color: Colors.grey, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${entry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Flexible(
+                      child: Text(
+                        entry.value,
+                        style: const TextStyle(color: Color(0xFF666666)),
+                        softWrap: true,
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -178,7 +215,10 @@ class RequesterDonorProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Recent Donations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text(
+              'Recent Donations',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 12),
             _buildHistoryItem('Jan 12, 2024', 'Kathmandu Medical College'),
             _buildHistoryItem('Oct 05, 2023', 'Grande Hospital'),
@@ -197,7 +237,10 @@ class RequesterDonorProfileScreen extends StatelessWidget {
           const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
           const SizedBox(width: 12),
           Expanded(child: Text('$date - $hospital')),
-          const Text('Completed', style: TextStyle(color: Colors.green, fontSize: 12)),
+          const Text(
+            'Completed',
+            style: TextStyle(color: Colors.green, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -214,7 +257,9 @@ class RequesterDonorProfileScreen extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFD32F2F),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 side: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),
               ),
               child: const Text('Edit Profile'),
@@ -225,11 +270,18 @@ class RequesterDonorProfileScreen extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: donor.isAvailable ? const Color(0xFFD32F2F) : const Color(0xFF4CAF50),
+                backgroundColor: donor.isAvailable
+                    ? const Color(0xFFD32F2F)
+                    : const Color(0xFF4CAF50),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: Text(donor.isAvailable ? 'Become Unavailable' : 'Become Available', style: const TextStyle(color: Colors.white)),
+              child: Text(
+                donor.isAvailable ? 'Become Unavailable' : 'Become Available',
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ],
