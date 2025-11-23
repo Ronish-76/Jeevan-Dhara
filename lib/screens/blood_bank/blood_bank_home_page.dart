@@ -1,37 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/screens/blood_bank/analytics_reports_page.dart';
 import 'package:jeevandhara/screens/blood_bank/distribute_blood_page.dart';
 import 'package:jeevandhara/screens/blood_bank/donation_history_page.dart';
 import 'package:jeevandhara/screens/blood_bank/manage_inventory_page.dart';
 import 'package:jeevandhara/screens/blood_bank/receive_donations_page.dart';
 import 'package:jeevandhara/screens/blood_bank/track_requests_page.dart';
+import 'package:intl/intl.dart';
 
-class BloodBankHomePage extends StatelessWidget {
+class BloodBankHomePage extends StatefulWidget {
   const BloodBankHomePage({super.key});
+
+  @override
+  State<BloodBankHomePage> createState() => _BloodBankHomePageState();
+}
+
+class _BloodBankHomePageState extends State<BloodBankHomePage> {
+  late Future<Map<String, dynamic>> _profileFuture;
+  List<dynamic> _recentDonations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && user.id != null) {
+      _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
+      _fetchRecentDonations(user.id!);
+    } else {
+      _profileFuture = Future.error('User not logged in');
+    }
+  }
+
+  Future<void> _fetchRecentDonations(String userId) async {
+    try {
+      final donations = await ApiService().getDonations(userId);
+      if (mounted) {
+        setState(() {
+          _recentDonations = donations.take(5).toList(); // Take top 5
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching donations: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-            _buildQuickActionsGrid(context),
-            const SizedBox(height: 16),
-            _buildCriticalStockAlert(),
-            const SizedBox(height: 16),
-            _buildInventorySection(),
-            const SizedBox(height: 16),
-            _buildRecentDonations(),
-          ],
-        ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+             return Center(child: Text('Error loading profile: ${snapshot.error}'));
+          }
+          
+          final profileData = snapshot.data;
+          if (profileData == null) {
+            return const Center(child: Text('No profile data found'));
+          }
+
+          final inventory = Map<String, dynamic>.from(profileData['inventory'] ?? {});
+          final name = profileData['bloodBankName'] ?? 'Blood Bank';
+          final location = profileData['fullAddress'] ?? 'Location';
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeader(name, location),
+                const SizedBox(height: 16),
+                _buildQuickActionsGrid(context),
+                const SizedBox(height: 16),
+                _buildCriticalStockAlert(inventory),
+                const SizedBox(height: 16),
+                _buildInventorySection(inventory),
+                const SizedBox(height: 16),
+                _buildRecentDonations(),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(String name, String location) {
     return Container(
       padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
       decoration: const BoxDecoration(
@@ -42,16 +100,16 @@ class BloodBankHomePage extends StatelessWidget {
         ),
         borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Central Blood Bank', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          SizedBox(height: 4),
+          Text(name, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.location_on_outlined, color: Colors.white70, size: 14),
-              SizedBox(width: 4),
-              Text('Kathmandu, Nepal', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const Icon(Icons.location_on_outlined, color: Colors.white70, size: 14),
+              const SizedBox(width: 4),
+              Text(location, style: const TextStyle(color: Colors.white70, fontSize: 14)),
             ],
           ),
         ],
@@ -76,17 +134,11 @@ class BloodBankHomePage extends StatelessWidget {
           _buildActionCard(context, 'Receive Donations', 'Register new donations', Icons.bloodtype_outlined, onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ReceiveDonationsPage()));
           }),
-          _buildActionCard(context, 'Track Requests', 'Monitor incoming requests', Icons.list_alt_outlined, onTap: () {
-             Navigator.push(context, MaterialPageRoute(builder: (context) => const TrackRequestsPage()));
+          _buildActionCard(context, 'Donation History', 'View all donations', Icons.history, onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const DonationHistoryPage()));
           }),
           _buildActionCard(context, 'Distribute Blood', 'Manage distributions', Icons.local_shipping_outlined, isPrimary: true, onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributeBloodPage()));
-          }),
-           _buildActionCard(context, 'Analytics', 'View reports & trends', Icons.analytics_outlined, onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AnalyticsReportsPage()));
-          }),
-           _buildActionCard(context, 'Donation History', 'View all donations', Icons.history, onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const DonationHistoryPage()));
           }),
         ],
       ),
@@ -118,7 +170,14 @@ class BloodBankHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCriticalStockAlert() {
+  Widget _buildCriticalStockAlert(Map<String, dynamic> inventory) {
+    int lowStockCount = 0;
+    inventory.forEach((key, value) {
+      if ((value as num) < 10) lowStockCount++;
+    });
+
+    if (lowStockCount == 0) return const SizedBox.shrink();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
@@ -130,23 +189,29 @@ class BloodBankHomePage extends StatelessWidget {
         children: [
           const Icon(Icons.warning, color: Colors.white, size: 24),
           const SizedBox(width: 12),
-          const Expanded(child: Text('4 blood types are running low', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-          TextButton(onPressed: () {}, child: const Text('View', style: TextStyle(color: Colors.white, decoration: TextDecoration.underline)))
+          Expanded(child: Text('$lowStockCount blood types are running low', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+          // Removed View Button
         ],
       ),
     );
   }
 
-  Widget _buildInventorySection() {
-    final inventory = {'A+': 45, 'A-': 12, 'B+': 38, 'B-': 8, 'O+': 6, 'O-': 5, 'AB+': 4, 'AB-': 2};
+  Widget _buildInventorySection(Map<String, dynamic> inventory) {
+    final allGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal:16.0),
       child: Column(
         children: [
-           Row(
+           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [const Text('Current Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)), TextButton(onPressed: () {}, child: const Text('View All'))],
+            children: [Text('Current Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600))], // Removed View All button
           ),
+          const SizedBox(height: 12),
+          if (inventory.isEmpty) 
+             const Padding(padding: EdgeInsets.all(16), child: Text("No inventory data available")),
+          
+          if (inventory.isNotEmpty)
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -156,10 +221,10 @@ class BloodBankHomePage extends StatelessWidget {
               crossAxisSpacing: 12,
               childAspectRatio: 1.2,
             ),
-            itemCount: inventory.length,
+            itemCount: allGroups.length,
             itemBuilder: (context, index) {
-              final group = inventory.keys.elementAt(index);
-              final units = inventory.values.elementAt(index);
+              final group = allGroups[index];
+              final units = (inventory[group] ?? 0) as int;
               final color = units < 10 ? Colors.red : (units < 20 ? Colors.orange : Colors.green);
               return _buildInventoryCard(group, units, color);
             },
@@ -195,14 +260,34 @@ class BloodBankHomePage extends StatelessWidget {
         children: [
           const Text('Recent Donations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          _buildDonationCard('Rajesh Kumar', 'O+', 'Today, 8:30 AM'),
-          _buildDonationCard('Sita Sharma', 'A+', 'Today, 10:15 AM'),
+          if (_recentDonations.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text("No recent donations", style: TextStyle(color: Colors.grey)),
+            )
+          else
+            ..._recentDonations.map((d) => _buildDonationCard(d)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildDonationCard(String name, String bloodGroup, String time) {
+  Widget _buildDonationCard(dynamic donation) {
+    final name = donation['donorName'] ?? 'Unknown Donor';
+    final bloodGroup = donation['bloodGroup'] ?? '';
+    final dateStr = donation['donationDate'];
+    String time = '';
+    
+    if (dateStr != null) {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      if (now.day == date.day && now.month == date.month && now.year == date.year) {
+        time = 'Today, ${DateFormat('hh:mm a').format(date)}';
+      } else {
+        time = DateFormat('MMM dd, hh:mm a').format(date);
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,

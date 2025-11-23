@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/services/api_service.dart';
 
 class HospitalEmergencyRequestPage extends StatefulWidget {
   const HospitalEmergencyRequestPage({super.key});
@@ -9,6 +12,11 @@ class HospitalEmergencyRequestPage extends StatefulWidget {
 
 class _HospitalEmergencyRequestPageState extends State<HospitalEmergencyRequestPage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
+  final _formKey = GlobalKey<FormState>();
+  final _situationController = TextEditingController();
+  final _unitsController = TextEditingController();
+  String? _selectedBloodGroup;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -22,11 +30,69 @@ class _HospitalEmergencyRequestPageState extends State<HospitalEmergencyRequestP
   @override
   void dispose() {
     _pulseController.dispose();
+    _situationController.dispose();
+    _unitsController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendEmergencyAlert() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
+
+    try {
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      if (user == null || user.id == null) throw Exception('User not logged in');
+
+      final requestData = {
+        'bloodGroup': _selectedBloodGroup,
+        'unitsRequired': int.parse(_unitsController.text),
+        'urgency': 'critical',
+        'requestedFrom': 'donor', // Default for emergency broadcast
+        'notifyViaEmergency': true,
+        'notes': _situationController.text.trim(),
+        // Auto-filled fields are part of the user profile which backend already knows via hospital ID, 
+        // but we send them if needed or just rely on backend to look up hospital.
+        // Backend schema for HospitalBloodRequest doesn't have specific 'deliveryLocation' field separate from hospital location 
+        // unless we put it in notes or additionalDetails. 
+        // We'll put the specific contact person/phone in notes if they differ, but here they match user profile.
+      };
+
+      await ApiService().createHospitalBloodRequest(user.id!, requestData);
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('🚨 Alert Sent'),
+          content: const Text('Emergency broadcast has been sent to all nearby donors.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx); // Close dialog
+                Navigator.pop(context); // Go back
+              },
+              child: const Text('OK'),
+            )
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to send alert: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final location = user?.hospitalLocation ?? user?.location ?? 'Unknown Location';
+    final contactPerson = user?.contactPerson ?? user?.fullName ?? 'Emergency Dept.';
+    final phone = user?.hospitalPhone ?? user?.phone ?? 'Unknown';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -41,18 +107,33 @@ class _HospitalEmergencyRequestPageState extends State<HospitalEmergencyRequestP
           const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFFB71C1C)))
+        : SingleChildScrollView(
         child: Column(
           children: [
             _buildUrgencyBanner(),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildGuidelinesSection(),
-                  const SizedBox(height: 24),
-                  _buildEmergencyForm(),
-                ],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildGuidelinesSection(),
+                    const SizedBox(height: 24),
+                    _buildBloodGroupDropdown(),
+                    const SizedBox(height: 20),
+                    _buildTextField('Units Needed *', 'Enter number of units', controller: _unitsController, isNumber: true),
+                    const SizedBox(height: 20),
+                    _buildReadOnlyField('Delivery Location *', location),
+                    const SizedBox(height: 20),
+                    _buildReadOnlyField('Contact Person *', contactPerson),
+                    const SizedBox(height: 20),
+                    _buildReadOnlyField('Contact Phone *', phone),
+                    const SizedBox(height: 20),
+                    _buildTextField('Situation Details', 'e.g., Cardiac surgery, Accident victim', controller: _situationController, maxLines: 3, isRequired: false),
+                  ],
+                ),
               ),
             ),
           ],
@@ -112,45 +193,56 @@ class _HospitalEmergencyRequestPageState extends State<HospitalEmergencyRequestP
     );
   }
 
-  Widget _buildEmergencyForm() {
-    return Column(
-      children: [
-        _buildFormField('Blood Group *', 'Select blood group', isRequired: true),
-        const SizedBox(height: 20),
-        _buildFormField('Units Needed *', 'Enter number of units', isRequired: true),
-        const SizedBox(height: 20),
-        _buildFormField('Delivery Location *', 'Bir Hospital - Emergency Ward', isRequired: true, prefilled: true),
-        const SizedBox(height: 20),
-        _buildFormField('Contact Person *', 'Dr. Sharma - Emergency Dept.', isRequired: true),
-        const SizedBox(height: 20),
-        _buildFormField('Contact Phone *', '+977 98XXXXXXXX', isRequired: true, prefilled: true),
-        const SizedBox(height: 20),
-        _buildFormField('Situation Details', 'e.g., Cardiac surgery, Accident victim', maxLines: 3),
-      ],
+  Widget _buildBloodGroupDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedBloodGroup,
+      items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => 
+        DropdownMenuItem(value: bg, child: Text(bg))
+      ).toList(),
+      onChanged: (val) => setState(() => _selectedBloodGroup = val),
+      decoration: _inputDecoration('Blood Group *'),
+      validator: (val) => val == null ? 'Required' : null,
     );
   }
 
-  Widget _buildFormField(String label, String hint, {bool isRequired = false, bool prefilled = false, int maxLines = 1}) {
+  Widget _buildTextField(String label, String hint, {TextEditingController? controller, bool isNumber = false, int maxLines = 1, bool isRequired = true}) {
     return TextFormField(
-      initialValue: prefilled ? hint : null,
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: prefilled ? null : hint,
-        labelStyle: TextStyle(color: isRequired ? const Color(0xFFB71C1C) : Colors.black54, fontWeight: FontWeight.bold),
-        helperText: isRequired ? 'This field is required' : 'Optional',
-        helperStyle: TextStyle(color: isRequired ? const Color(0xFFB71C1C) : Colors.grey),
+      decoration: _inputDecoration(label, hint: hint),
+      validator: (val) {
+        if (!isRequired) return null;
+        if (val == null || val.isEmpty) return 'Required';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return TextFormField(
+      initialValue: value,
+      readOnly: true,
+      decoration: _inputDecoration(label).copyWith(
         filled: true,
-        fillColor: const Color(0xFFF9F9F9),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: isRequired ? const Color(0xFFD32F2F).withOpacity(0.5) : Colors.grey.shade300),
-        ),
+        fillColor: const Color(0xFFF5F5F5),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(color: Color(0xFFB71C1C), fontWeight: FontWeight.bold),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 2),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
       ),
     );
   }
@@ -169,13 +261,12 @@ class _HospitalEmergencyRequestPageState extends State<HospitalEmergencyRequestP
           ScaleTransition(
             scale: Tween<double>(begin: 0.98, end: 1.02).animate(_pulseController),
             child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Add confirmation dialog
-              },
+              onPressed: _isLoading ? null : _sendEmergencyAlert,
               icon: const Icon(Icons.crisis_alert, color: Colors.white),
               label: const Text('SEND URGENT ALERT'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C),
+                disabledBackgroundColor: const Color(0xFFB71C1C).withOpacity(0.6),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/services/api_service.dart';
 
-class ManageInventoryPage extends StatelessWidget {
+class ManageInventoryPage extends StatefulWidget {
   const ManageInventoryPage({super.key});
+
+  @override
+  State<ManageInventoryPage> createState() => _ManageInventoryPageState();
+}
+
+class _ManageInventoryPageState extends State<ManageInventoryPage> {
+  late Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && user.id != null) {
+      _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
+    } else {
+      _profileFuture = Future.error('User not logged in');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,84 +39,84 @@ class ManageInventoryPage extends StatelessWidget {
           ],
         ),
       ),
-      body: ListView(
-        children: [
-          _buildSearchBar(),
-          _buildInventoryOverview(),
-          _buildFilterAndSortBar(),
-          const SizedBox(height: 16),
-          _buildStockItemsList(),
-        ],
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error loading inventory: ${snapshot.error}'));
+          }
+
+          final profileData = snapshot.data;
+          if (profileData == null) {
+            return const Center(child: Text('No inventory data found'));
+          }
+
+          final inventory = Map<String, dynamic>.from(profileData['inventory'] ?? {});
+          
+          int totalUnits = 0;
+          int expiringSoon = 0; 
+          int bloodTypesCount = 0;
+
+          final List<Map<String, dynamic>> stockItems = [];
+          
+          inventory.forEach((group, quantity) {
+            final qty = (quantity as num).toInt();
+            if (qty > 0) {
+              totalUnits += qty;
+              bloodTypesCount++;
+              
+              stockItems.add({
+                'group': group,
+                'quantity': qty,
+                'status': qty < 10 ? 'Critical' : 'Fresh', 
+              });
+            }
+          });
+          
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            children: [
+              // Removed Search Bar
+              _buildInventoryOverview(totalUnits.toString(), expiringSoon.toString(), bloodTypesCount.toString()),
+              // Removed Filter/Sort Bar (All Blood Groups)
+              const SizedBox(height: 24),
+              _buildStockItemsList(stockItems),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildInventoryOverview(String total, String expiring, String types) {
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search by blood group, batch, or donor...',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInventoryOverview() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: _StatCard(value: '158', label: 'Total Units', color: Color(0xFF2196F3))),
-          SizedBox(width: 12),
-          Expanded(child: _StatCard(value: '7', label: 'Expiring Soon', color: Color(0xFFFF9800))),
-          SizedBox(width: 12),
-          Expanded(child: _StatCard(value: '8', label: 'Blood Types', color: Color(0xFF4CAF50))),
+          Expanded(child: _StatCard(value: total, label: 'Total Units', color: const Color(0xFF2196F3))),
+          const SizedBox(width: 12),
+          Expanded(child: _StatCard(value: expiring, label: 'Expiring Soon', color: const Color(0xFFFF9800))),
+          const SizedBox(width: 12),
+          Expanded(child: _StatCard(value: types, label: 'Blood Types', color: const Color(0xFF4CAF50))),
         ],
       ),
     );
   }
 
-  Widget _buildFilterAndSortBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Chip(
-            label: const Text('All Blood Groups'),
-            backgroundColor: const Color(0xFFD32F2F),
-            labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-          const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.sort)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStockItemsList() {
-    final stockItems = [
-      {'group': 'A-', 'quantity': 8, 'status': 'Fresh', 'batchId': 'BB-B-604', 'donor': 'Maya Gurung', 'expiry': 38},
-      {'group': 'O+', 'quantity': 12, 'status': 'Expiring Soon', 'batchId': 'BB-O-112', 'donor': 'Hari Thapa', 'expiry': 15},
-      {'group': 'AB-', 'quantity': 2, 'status': 'Critical', 'batchId': 'BB-AB-98', 'donor': 'Gita Sedai', 'expiry': 4},
-       {'group': 'B+', 'quantity': 20, 'status': 'Fresh', 'batchId': 'BB-B-781', 'donor': 'Ram KC', 'expiry': 45},
-    ];
-
+  Widget _buildStockItemsList(List<Map<String, dynamic>> stockItems) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal:16.0),
       child: Column(
          crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           const Text('Stock Items (16)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-           const SizedBox(height:8),
+           Text('Stock Items (${stockItems.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+           const SizedBox(height:12),
+           if (stockItems.isEmpty)
+             const Text("No stock items found."),
           ...stockItems.map((item) => _buildStockItemCard(item)).toList(),
         ],
       ),
@@ -111,39 +132,32 @@ class ManageInventoryPage extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
           children: [
-            Row(
-              children: [
-                CircleAvatar(backgroundColor: statusColor, radius: 20, child: Text(item['group'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                const SizedBox(width: 12),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${item['quantity']} Units', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), Text(item['status'], style: TextStyle(color: statusColor, fontWeight: FontWeight.w500, fontSize: 12))]),
-                const Spacer(),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert, color: Colors.grey)),
-              ],
+            CircleAvatar(
+              backgroundColor: statusColor, 
+              radius: 24, 
+              child: Text(item['group'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))
             ),
-            const Divider(height: 20),
-            _buildDetailRow(Icons.person_outline, 'Donor', item['donor']),
-            _buildDetailRow(Icons.inventory_2_outlined, 'Batch ID', item['batchId']),
-            _buildDetailRow(Icons.calendar_today_outlined, 'Expiry', '${item['expiry']} days left'),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, 
+                children: [
+                  Text('${item['quantity']} Units', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), 
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    child: Text(item['status'], style: TextStyle(color: statusColor, fontWeight: FontWeight.w600, fontSize: 12))
+                  )
+                ]
+              ),
+            ),
+            IconButton(onPressed: () {}, icon: const Icon(Icons.edit_outlined, color: Colors.grey)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: Colors.grey),
-          const SizedBox(width: 8),
-          Text('$label:', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
-          const SizedBox(width: 4),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }
@@ -157,7 +171,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [

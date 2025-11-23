@@ -99,91 +99,120 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildEmailStep() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Icon(Icons.lock_reset, size: 64, color: Color(0xFFD32F2F)),
-          const SizedBox(height: 24),
-          const Text(
-            'Enter your email to receive password reset instructions',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
-          ),
-          const SizedBox(height: 32),
-          _buildTextFormField(controller: _emailController, label: 'Email Address'),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _sendResetInstructions,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: const Text('Send Reset Instructions'),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Remember your password? Sign in'),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.lock_reset, size: 64, color: Color(0xFFD32F2F)),
+            const SizedBox(height: 24),
+            const Text(
+              'Enter your email to receive password reset instructions',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            _buildTextFormField(
+              controller: _emailController,
+              label: 'Email Address',
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _sendResetInstructions,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Send Reset Instructions'),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Remember your password? Sign in'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildOtpStep() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Enter the verification code sent to your email',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
-          ),
-          const SizedBox(height: 32),
-          _buildTextFormField(controller: _otpController, label: 'Verification Code'),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _verifyCode,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: const Text('Verify Code'),
-          ),
-          const SizedBox(height: 16),
-           Center(
-            child: TextButton(
-              onPressed: () {},
-              child: const Text('Didn\'t receive code? Resend'),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Enter the verification code sent to your email',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            _buildTextFormField(
+              controller: _otpController,
+              label: 'Verification Code',
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _verifyCode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Verify Code'),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () {},
+                child: const Text('Didn\'t receive code? Resend'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildNewPasswordStep() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Create your new password',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
-          ),
-          const SizedBox(height: 32),
-          _buildTextFormField(controller: _newPasswordController, label: 'New Password', obscureText: true),
-          const SizedBox(height: 20),
-          _buildTextFormField(controller: _confirmPasswordController, label: 'Confirm New Password', obscureText: true),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _resetPassword,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: const Text('Reset Password'),
-          ),
-        ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Create your new password',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
+            ),
+            const SizedBox(height: 32),
+            _buildTextFormField(
+              controller: _newPasswordController,
+              label: 'New Password',
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            _buildTextFormField(
+              controller: _confirmPasswordController,
+              label: 'Confirm New Password',
+              obscureText: true,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _resetPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Reset Password'),
+            ),
+          ],
+        ),
       ),
     );
   }

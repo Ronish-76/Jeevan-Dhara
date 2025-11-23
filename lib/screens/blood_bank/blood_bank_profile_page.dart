@@ -1,7 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/services/api_service.dart';
+import 'package:jeevandhara/screens/auth/user_selection_screen.dart';
 
-class BloodBankProfilePage extends StatelessWidget {
+class BloodBankProfilePage extends StatefulWidget {
   const BloodBankProfilePage({super.key});
+
+  @override
+  State<BloodBankProfilePage> createState() => _BloodBankProfilePageState();
+}
+
+class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
+  late Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && user.id != null) {
+      _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
+    } else {
+      _profileFuture = Future.error('User not logged in');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,30 +34,49 @@ class BloodBankProfilePage extends StatelessWidget {
         elevation: 0,
         foregroundColor: Colors.white,
         title: const Text('Blood Bank Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.edit_outlined))],
+        actions: [], // Removed Edit Icon
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildOrganizationCard(),
-            const SizedBox(height: 20),
-            _buildPerformanceDashboard(),
-            const SizedBox(height: 20),
-            _buildContactInfoCard(),
-            const SizedBox(height: 20),
-            _buildOperatingHoursCard(),
-            const SizedBox(height: 20),
-            _buildCertificationsCard(),
-            const SizedBox(height: 20),
-            _buildActionsPanel(context),
-          ],
-        ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error loading profile: ${snapshot.error}'));
+          }
+          
+          final profile = snapshot.data;
+          if (profile == null) {
+            return const Center(child: Text('No profile data found'));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildOrganizationCard(profile),
+                const SizedBox(height: 20),
+                // _buildPerformanceDashboard(), // Removing as it seems related to analytics/metrics context
+                _buildContactInfoCard(profile),
+                const SizedBox(height: 20),
+                _buildOperatingHoursCard(), 
+                const SizedBox(height: 20),
+                _buildCertificationsCard(profile),
+                const SizedBox(height: 20),
+                _buildActionsPanel(context),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildOrganizationCard() {
+  Widget _buildOrganizationCard(Map<String, dynamic> profile) {
+    final name = profile['bloodBankName'] ?? 'Blood Bank';
+    final subTitle = profile['registrationNumber'] != null ? 'Reg ID: ${profile['registrationNumber']}' : 'Registered Blood Bank';
+
     return _buildInfoCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -44,12 +85,12 @@ class BloodBankProfilePage extends StatelessWidget {
             children: [
               const CircleAvatar(radius: 30, backgroundColor: Color(0xFFD32F2F), child: Icon(Icons.bloodtype, color: Colors.white, size: 30)),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Central Blood Bank', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text('Government Recognized Blood Bank', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text(subTitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
               ),
@@ -60,43 +101,27 @@ class BloodBankProfilePage extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 30),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _MetricItem(value: '10K+', label: 'Donations'),
-              _MetricItem(value: '8K+', label: 'Requests'),
-              _MetricItem(value: '12Y', label: 'Service'),
-              _MetricItem(value: '98%', label: 'Success Rate'),
-            ],
-          ),
+          // Removed Metrics Row (Donations, Requests, Service, Success Rate)
         ],
       ),
     );
   }
 
-  Widget _buildPerformanceDashboard() {
-    return _buildInfoCard(
-      title: 'Performance & Analytics',
-      child: const Column(
-        children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ Text('Today\'s Activity'), Text('Monthly Goal'),]),
-           SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ _MetricItem(value: '22', label: 'Donations'), _MetricItem(value: '75%', label: 'of 400 units'),]),
-        ],
-      ),
-    );
-  }
+  // Removed _buildPerformanceDashboard as it's likely what user meant or at least related unwanted metrics
 
-  Widget _buildContactInfoCard() {
+  Widget _buildContactInfoCard(Map<String, dynamic> profile) {
+    final address = profile['fullAddress'] ?? 'Unknown Address';
+    final phone = profile['phoneNumber'] ?? 'Unknown Phone';
+    final email = profile['email'] ?? 'Unknown Email';
+    
     return _buildInfoCard(
       title: 'Contact Information',
       child: Column(
         children: [
-          _buildContactRow(Icons.location_on_outlined, 'Address', 'Mahabouddha, Kathmandu, Nepal'),
-          _buildContactRow(Icons.phone_outlined, 'Primary Phone', '+977 1-4221119'),
-          _buildContactRow(Icons.email_outlined, 'Email Address', 'info@centralbloodbank.org.np'),
-          _buildContactRow(Icons.language_outlined, 'Website', 'www.centralbloodbank.org.np'),
+          _buildContactRow(Icons.location_on_outlined, 'Address', address),
+          _buildContactRow(Icons.phone_outlined, 'Primary Phone', phone),
+          _buildContactRow(Icons.email_outlined, 'Email Address', email),
+          _buildContactRow(Icons.language_outlined, 'Website', 'www.jeevandhara.org'), // Placeholder
         ],
       ),
     );
@@ -116,14 +141,19 @@ class BloodBankProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCertificationsCard() {
+  Widget _buildCertificationsCard(Map<String, dynamic> profile) {
+    final hasEmergency = profile['emergencyService24x7'] == true;
+    final hasComponent = profile['componentSeparation'] == true;
+    final hasApheresis = profile['apheresisService'] == true;
+
     return _buildInfoCard(
-      title: 'Certifications & Compliance',
+      title: 'Services & Compliance',
       child: Column(
         children: [
-          _buildChecklistItem('ISO 9001:2015 Certified', true),
-          _buildChecklistItem('National Public Health Laboratory Certified', true),
-          _buildChecklistItem('Regularly Audited by Dept. of Drug Administration', true),
+          _buildChecklistItem('24/7 Emergency Service', hasEmergency),
+          _buildChecklistItem('Component Separation', hasComponent),
+          _buildChecklistItem('Apheresis Service', hasApheresis),
+          _buildChecklistItem('Govt. Registered', true),
         ],
       ),
     );
@@ -132,10 +162,20 @@ class BloodBankProfilePage extends StatelessWidget {
   Widget _buildActionsPanel(BuildContext context) {
     return Column(
       children: [
-        ListTile(title: const Text('Settings'), leading: const Icon(Icons.settings_outlined), onTap: () {}),
-        ListTile(title: const Text('Logout', style: TextStyle(color: Color(0xFFD32F2F))), leading: const Icon(Icons.logout, color: Color(0xFFD32F2F)), onTap: () {
-          Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const UserSelectionScreen()), (route) => false); // Placeholder
-        }),
+        // Removed Settings Tile
+        ListTile(
+          title: const Text('Logout', style: TextStyle(color: Color(0xFFD32F2F))),
+          leading: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
+          onTap: () async {
+            await Provider.of<AuthProvider>(context, listen: false).logout();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const UserSelectionScreen()),
+                (route) => false,
+              );
+            }
+          },
+        ),
       ],
     );
   }
@@ -171,26 +211,4 @@ class BloodBankProfilePage extends StatelessWidget {
   Widget _buildChecklistItem(String text, bool isChecked) {
     return Row(children: [Icon(isChecked ? Icons.check_circle : Icons.cancel, color: isChecked ? Colors.green : Colors.grey, size: 20), const SizedBox(width: 12), Expanded(child: Text(text, style: const TextStyle(fontSize: 14)))]);
   }
-}
-
-class _MetricItem extends StatelessWidget {
-  final String value, label;
-  const _MetricItem({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      ],
-    );
-  }
-}
-// Dummy UserSelectionScreen for navigation placeholder
-class UserSelectionScreen extends StatelessWidget {
-  const UserSelectionScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('User Selection Screen')));
 }

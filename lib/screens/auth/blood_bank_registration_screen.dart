@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jeevandhara/services/api_service.dart';
+import 'package:jeevandhara/screens/auth/login_screen.dart';
 
 class BloodBankRegistrationScreen extends StatefulWidget {
   const BloodBankRegistrationScreen({super.key});
@@ -11,6 +13,7 @@ class BloodBankRegistrationScreen extends StatefulWidget {
 class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isLoading = false;
 
   // Form Keys
   final _step1FormKey = GlobalKey<FormState>();
@@ -82,7 +85,7 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
     );
   }
 
-  void _completeRegistration() {
+  Future<void> _completeRegistration() async {
     if (_step3FormKey.currentState!.validate()) {
       if (!_termsAccepted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,11 +93,84 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
         );
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Blood Bank Registration Complete!')),
-      );
-      Navigator.of(context).popUntil((route) => route.isFirst);
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      final data = {
+        'bloodBankName': _bloodBankNameController.text,
+        'email': _emailController.text,
+        'phoneNumber': _phoneController.text,
+        'registrationNumber': _licenseIdController.text,
+        'fullAddress': _addressController.text,
+        'city': _cityController.text,
+        'district': _districtController.text,
+        'contactPerson': _contactPersonController.text,
+        'designation': _designationController.text,
+        'storageCapacity': int.tryParse(_storageCapacityController.text) ?? 0,
+        'emergencyService24x7': _isEmergencyServiceAvailable,
+        'componentSeparation': _hasComponentSeparation,
+        'apheresisService': _hasApheresisService,
+        'password': _passwordController.text,
+      };
+
+      try {
+        await ApiService().registerBloodBank(data);
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Registration Successful', style: TextStyle(color: Color(0xFFD32F2F))),
+                content: const Text('Your account has been created successfully. Please login to continue.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    },
+                    child: const Text('OK', style: TextStyle(color: Color(0xFFD32F2F))),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorDialog('Registration Failed: ${e.toString().replaceAll('Exception:', '')}');
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
   
   Widget _buildTextFormField({
@@ -125,32 +201,32 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text('Blood Bank Registration', style: TextStyle(color: Colors.black, fontFamily: 'Poppins')),
+        title: const Text('Blood Bank Registration', style: TextStyle(color: Colors.black, fontFamily: 'Poppins')),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: _currentPage > 0
-            ? IconButton(icon: Icon(Icons.arrow_back, color: Colors.black), onPressed: _previousPage)
-            : null,
-        iconTheme: IconThemeData(color: Colors.black),
+            ? IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: _previousPage)
+            : BackButton(onPressed: () => Navigator.of(context).pop()),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              SizedBox(height: 16),
-              Text('Step ${_currentPage + 1} of 3', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-              SizedBox(height: 4),
+              const SizedBox(height: 16),
+              Text('Step ${_currentPage + 1} of 3', style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
               LinearProgressIndicator(
                 value: (_currentPage + 1) / 3,
                 backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD32F2F)),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD32F2F)),
               ),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   onPageChanged: (page) => setState(() => _currentPage = page),
-                  physics: NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   children: [_buildStep1(), _buildStep2(), _buildStep3()],
                 ),
               ),
@@ -169,31 +245,31 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Blood Bank Details', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
-            SizedBox(height: 8),
+            const Text('Blood Bank Details', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
             Text('Register your blood bank to connect with donors and hospitals', style: TextStyle(fontFamily: 'Inter', color: Colors.grey[600])),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             _buildTextFormField(controller: _bloodBankNameController, label: 'Blood Bank Name'),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _emailController, label: 'Email Address', keyboardType: TextInputType.emailAddress),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _phoneController, label: 'Phone Number', keyboardType: TextInputType.phone),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _licenseIdController, label: 'Registration/License ID'),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _addressController, label: 'Full Address'),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Row(children: [
               Expanded(child: _buildTextFormField(controller: _cityController, label: 'City')),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(child: _buildTextFormField(controller: _districtController, label: 'District')),
             ]),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _contactPersonController, label: 'Contact Person'),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _designationController, label: 'Designation'),
-            SizedBox(height: 32),
-            ElevatedButton(onPressed: _nextPage, child: Text('Next: Inventory & Services'), style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD32F2F), padding: EdgeInsets.symmetric(vertical: 16))),
+            const SizedBox(height: 32),
+            ElevatedButton(onPressed: _nextPage, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text('Next: Inventory & Services')),
           ],
         ),
       ),
@@ -208,19 +284,19 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Inventory & Services', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
-            SizedBox(height: 8),
+            const Text('Inventory & Services', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
             Text('Complete your profile with inventory and security', style: TextStyle(fontFamily: 'Inter', color: Colors.grey[600])),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             _buildTextFormField(controller: _storageCapacityController, label: 'Storage Capacity (Units)', keyboardType: TextInputType.number),
-            SizedBox(height: 16),
-            SwitchListTile(title: Text('24/7 Emergency Service'), value: _isEmergencyServiceAvailable, onChanged: (v) => setState(() => _isEmergencyServiceAvailable = v), activeColor: Color(0xFFD32F2F)),
-            SizedBox(height: 16),
-            Text('Specialized Services', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600)),
-            SwitchListTile(title: Text('Component Separation'), value: _hasComponentSeparation, onChanged: (v) => setState(() => _hasComponentSeparation = v), activeColor: Color(0xFFD32F2F)),
-            SwitchListTile(title: Text('Apheresis Service'), value: _hasApheresisService, onChanged: (v) => setState(() => _hasApheresisService = v), activeColor: Color(0xFFD32F2F)),
-            SizedBox(height: 32),
-            ElevatedButton(onPressed: _nextPage, child: Text('Next: Security Setup'), style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD32F2F), padding: EdgeInsets.symmetric(vertical: 16))),
+            const SizedBox(height: 16),
+            SwitchListTile(title: const Text('24/7 Emergency Service'), value: _isEmergencyServiceAvailable, onChanged: (v) => setState(() => _isEmergencyServiceAvailable = v), activeColor: const Color(0xFFD32F2F)),
+            const SizedBox(height: 16),
+            const Text('Specialized Services', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600)),
+            SwitchListTile(title: const Text('Component Separation'), value: _hasComponentSeparation, onChanged: (v) => setState(() => _hasComponentSeparation = v), activeColor: const Color(0xFFD32F2F)),
+            SwitchListTile(title: const Text('Apheresis Service'), value: _hasApheresisService, onChanged: (v) => setState(() => _hasApheresisService = v), activeColor: const Color(0xFFD32F2F)),
+            const SizedBox(height: 32),
+            ElevatedButton(onPressed: _nextPage, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text('Next: Security Setup')),
 
           ],
         ),
@@ -236,14 +312,14 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Security & Compliance', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
-            SizedBox(height: 24),
-            _buildTextFormField(controller: _passwordController, label: 'Create Password', obscureText: true, validator: (v) => v!.length < 12 ? 'Password must be at least 12 characters' : null),
-            SizedBox(height: 16),
+            const Text('Security & Compliance', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 24),
+            _buildTextFormField(controller: _passwordController, label: 'Create Password', obscureText: true, validator: (v) => v!.length < 6 ? 'Password must be at least 6 characters' : null),
+            const SizedBox(height: 16),
             _buildTextFormField(controller: _confirmPasswordController, label: 'Confirm Password', obscureText: true, validator: (v) => v != _passwordController.text ? 'Passwords do not match' : null),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
@@ -251,23 +327,30 @@ class _BloodBankRegistrationScreenState extends State<BloodBankRegistrationScree
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Regulatory Compliance', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 8),
+                  const Text('Regulatory Compliance', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
                   CheckboxListTile(
-                    title: Text('I agree to the blood safety regulations and quality standards.', style: TextStyle(fontSize: 14)),
+                    title: const Text('I agree to the blood safety regulations and quality standards.', style: TextStyle(fontSize: 14)),
                     value: _termsAccepted,
                     onChanged: (v) => setState(() => _termsAccepted = v!),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
-                    activeColor: Color(0xFFD32F2F),
+                    activeColor: const Color(0xFFD32F2F),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 32),
-            ElevatedButton(onPressed: _completeRegistration, child: Text('Complete Registration'), style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD32F2F), padding: EdgeInsets.symmetric(vertical: 16))),
-            SizedBox(height: 16),
-            Center(child: TextButton(onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst), child: Text('Already have an account? Login'))),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _completeRegistration,
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), padding: const EdgeInsets.symmetric(vertical: 16)),
+              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Complete Registration'),
+            ),
+            const SizedBox(height: 16),
+            Center(child: TextButton(onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    ), child: const Text('Already have an account? Login'))),
           ],
         ),
       ),

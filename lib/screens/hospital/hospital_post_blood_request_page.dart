@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/services/api_service.dart';
 
 class HospitalPostBloodRequestPage extends StatefulWidget {
   const HospitalPostBloodRequestPage({super.key});
@@ -8,12 +11,66 @@ class HospitalPostBloodRequestPage extends StatefulWidget {
 }
 
 class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _notesController = TextEditingController();
+  
   String? _selectedBloodGroup;
-  String? _selectedUrgency;
+  String _selectedUrgency = 'medium';
+  String _requestedFrom = 'donor'; // Default to donor
   int _requiredUnits = 1;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedBloodGroup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a blood group')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      if (user == null || user.id == null) {
+        throw Exception('User not logged in');
+      }
+
+      final requestData = {
+        // 'patientName' removed as it's optional for hospitals
+        'bloodGroup': _selectedBloodGroup,
+        'unitsRequired': _requiredUnits,
+        'urgency': _selectedUrgency,
+        'requestedFrom': _requestedFrom,
+        'notes': _notesController.text.trim(),
+      };
+
+      await ApiService().createHospitalBloodRequest(user.id!, requestData);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Blood request posted successfully')));
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to post request: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final hospitalName = user?.hospital ?? user?.fullName ?? 'Hospital Name';
+    final location = user?.hospitalLocation ?? user?.location ?? 'Unknown Location';
+    final contact = user?.hospitalPhone ?? user?.phone ?? 'Unknown Number';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -27,29 +84,35 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildGuidelinesBanner(),
-            const SizedBox(height: 24),
-            _buildDropdownField('Blood Group *', 'Select blood group', ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'], (val) => setState(() => _selectedBloodGroup = val)),
-            const SizedBox(height: 20),
-            _buildUnitsField(),
-            const SizedBox(height: 20),
-            _buildUrgencySelector(),
-            const SizedBox(height: 20),
-            _buildDropdownField('Hospital Department *', 'Select department', ['Emergency', 'Surgery', 'ICU', 'Maternity'], (val) {}),
-            const SizedBox(height: 20),
-            _buildPrefilledField('Hospital Location *', 'Bir Hospital, Kathmandu, Nepal'),
-            const SizedBox(height: 20),
-            _buildPrefilledField('Contact Number', '+977 1-4221119'),
-            const SizedBox(height: 20),
-            _buildNotesField(),
-            const SizedBox(height: 30),
-          ],
-        ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGuidelinesBanner(),
+                const SizedBox(height: 24),
+                // Patient Name Field Removed
+                _buildDropdownField('Blood Group *', 'Select blood group', ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'], (val) => setState(() => _selectedBloodGroup = val)),
+                const SizedBox(height: 20),
+                _buildUnitsField(),
+                const SizedBox(height: 20),
+                _buildUrgencySelector(),
+                const SizedBox(height: 20),
+                _buildRequestSourceSelector(),
+                const SizedBox(height: 20),
+                _buildPrefilledField('Hospital Location *', location),
+                const SizedBox(height: 20),
+                _buildPrefilledField('Contact Number', contact),
+                const SizedBox(height: 20),
+                _buildNotesField(),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
       ),
       bottomNavigationBar: _buildSubmitButton(),
     );
@@ -86,6 +149,7 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
           decoration: _inputDecoration(),
           items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
           onChanged: onChanged,
+          validator: (val) => val == null ? 'Required' : null,
         ),
       ],
     );
@@ -105,6 +169,7 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 decoration: _inputDecoration(),
+                readOnly: true,
               ),
             ),
             const SizedBox(width: 12),
@@ -117,7 +182,9 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
   }
 
   Widget _buildUrgencySelector() {
-    final urgencies = {'Normal': Colors.blue, 'Urgent': Colors.orange, 'Critical': Colors.red};
+    final urgencies = {'Normal': 'low', 'Medium': 'medium', 'Urgent': 'high', 'Critical': 'critical'};
+    final urgencyColors = {'low': Colors.blue, 'medium': Colors.teal, 'high': Colors.orange, 'critical': Colors.red};
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -127,15 +194,17 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
           height: 40,
           child: ListView( 
             scrollDirection: Axis.horizontal,
-            children: urgencies.keys.map((urgency) {
-              final isSelected = _selectedUrgency == urgency;
+            children: urgencies.entries.map((entry) {
+              final label = entry.key;
+              final value = entry.value;
+              final isSelected = _selectedUrgency == value;
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
-                  label: Text(urgency),
+                  label: Text(label),
                   selected: isSelected,
-                  onSelected: (selected) => setState(() => _selectedUrgency = selected ? urgency : null),
-                  selectedColor: urgencies[urgency],
+                  onSelected: (selected) => setState(() => _selectedUrgency = value),
+                  selectedColor: urgencyColors[value],
                   labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12),
                   backgroundColor: Colors.grey.shade200,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
@@ -148,6 +217,40 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
     );
   }
 
+   Widget _buildRequestSourceSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Request From *', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('Donors'),
+                value: 'donor',
+                groupValue: _requestedFrom,
+                onChanged: (val) => setState(() => _requestedFrom = val!),
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFFD32F2F),
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('Blood Bank'),
+                value: 'blood_bank',
+                groupValue: _requestedFrom,
+                onChanged: (val) => setState(() => _requestedFrom = val!),
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFFD32F2F),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildPrefilledField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +258,7 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
         Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: value,
+          controller: TextEditingController(text: value), // Use controller to show text
           readOnly: true,
           decoration: _inputDecoration().copyWith(
             filled: true,
@@ -174,6 +277,7 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
         const Text('Additional Notes', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         const SizedBox(height: 8),
         TextFormField(
+          controller: _notesController,
           maxLines: 4,
           decoration: _inputDecoration().copyWith(hintText: 'Optional: Provide context to help donors understand the urgency'),
         ),
@@ -187,13 +291,16 @@ class _HospitalPostBloodRequestPageState extends State<HospitalPostBloodRequestP
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: _isLoading ? null : _submitRequest,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFD32F2F),
+            disabledBackgroundColor: const Color(0xFFD32F2F).withOpacity(0.6),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Submit Blood Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+          child: _isLoading 
+            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Text('Submit Blood Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         ),
       ),
     );

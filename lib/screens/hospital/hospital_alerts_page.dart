@@ -1,7 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:jeevandhara/models/blood_request_model.dart';
+import 'package:jeevandhara/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/screens/hospital/hospital_request_details_page.dart';
 
-class HospitalAlertsPage extends StatelessWidget {
+class HospitalAlertsPage extends StatefulWidget {
   const HospitalAlertsPage({super.key});
+
+  @override
+  State<HospitalAlertsPage> createState() => _HospitalAlertsPageState();
+}
+
+class _HospitalAlertsPageState extends State<HospitalAlertsPage> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _inProcessRequests = [];
+  List<Map<String, dynamic>> _completedRequests = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAlerts();
+  }
+
+  Future<void> _fetchAlerts() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      if (user == null || user.id == null) return;
+
+      // Fetch Requests only
+      final requestData = await ApiService().getHospitalBloodRequests(user.id!);
+      final requests = (requestData as List).map((e) => BloodRequest.fromJson(e)).toList();
+
+      _processRequests(requests);
+
+    } catch (e) {
+      debugPrint('Error fetching alerts: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _processRequests(List<BloodRequest> requests) {
+    final List<Map<String, dynamic>> inProcess = [];
+    final List<Map<String, dynamic>> completed = [];
+
+    // Sort by latest first
+    requests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    for (var req in requests) {
+      final status = req.status.toLowerCase();
+      
+      if (status == 'fulfilled') {
+        completed.add({
+          'title': 'Request Completed',
+          'message': '${req.units} units of ${req.bloodGroup} - Fulfilled',
+          'time': _formatTimeAgo(req.createdAt),
+          'color': Colors.green,
+          'action': 'View',
+          'request': req,
+        });
+      } else if (status == 'cancelled') {
+         // Optionally include cancelled in completed or separate
+         completed.add({
+          'title': 'Request Cancelled',
+          'message': '${req.units} units of ${req.bloodGroup} - Cancelled',
+          'time': _formatTimeAgo(req.createdAt),
+          'color': Colors.grey,
+          'action': 'View',
+          'request': req,
+        });
+      } else {
+        // Pending, Accepted, Approved, In Transit -> In Process
+        Color color = Colors.orange;
+        String title = 'Request Pending';
+        
+        if (status == 'accepted' || status == 'approved') {
+          color = Colors.blue;
+          title = 'Request Accepted';
+        } else if (status == 'in_transit') { // If status supports this
+          color = Colors.purple;
+          title = 'In Transit';
+        }
+
+        inProcess.add({
+          'title': title,
+          'message': '${req.units} units of ${req.bloodGroup} - ${status.toUpperCase()}',
+          'time': _formatTimeAgo(req.createdAt),
+          'color': color,
+          'action': 'Track',
+          'request': req,
+        });
+      }
+    }
+
+    _inProcessRequests = inProcess;
+    _completedRequests = completed;
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
+    if (diff.inHours < 24) return '${diff.inHours} hours ago';
+    return '${diff.inDays} days ago';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,56 +113,29 @@ class HospitalAlertsPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Text('Hospital Alerts'),
+        title: const Text('Request Updates'),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined, color: Colors.white)),
+          IconButton(onPressed: _fetchAlerts, icon: const Icon(Icons.refresh, color: Colors.white)),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildSectionHeader('Critical Alerts', Icons.warning_amber_rounded, Colors.red),
-          _buildAlertCard(
-            title: 'Critical Blood Shortage',
-            message: 'O- blood stock at 2 units (min: 10 units required)',
-            time: '15 minutes ago',
-            priorityColor: Colors.red,
-            actionText: 'Restock Now',
-          ),
-          _buildAlertCard(
-            title: 'Emergency Blood Request',
-            message: 'Cardiac surgery requires 4 units of AB+ immediately',
-            time: '30 minutes ago',
-            priorityColor: Colors.red,
-            actionText: 'View Request',
-          ),
-          const SizedBox(height: 16),
-          _buildSectionHeader('Inventory Warnings', Icons.inventory_2_outlined, Colors.orange),
-          _buildAlertCard(
-            title: 'Low Stock Warning',
-            message: 'B+ stock low: 8 units (min: 15)',
-            time: '2 hours ago',
-            priorityColor: Colors.orange,
-            actionText: 'Order',
-          ),
-          _buildAlertCard(
-            title: 'A- Units Expiring',
-            message: '3 units expire in 3 days',
-            time: '4 hours ago',
-            priorityColor: Colors.orange,
-            actionText: 'Use First',
-          ),
-          const SizedBox(height: 16),
-           _buildSectionHeader('Request Updates', Icons.person_outline, Colors.blue),
-           _buildAlertCard(
-            title: 'Donor Confirmed',
-            message: 'Rajesh Kumar confirmed donation - ETA 45 minutes',
-            time: '25 minutes ago',
-            priorityColor: Colors.blue,
-            actionText: 'Prepare',
-          ),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _inProcessRequests.isEmpty && _completedRequests.isEmpty
+              ? const Center(child: Text('No request updates', style: TextStyle(color: Colors.grey)))
+              : ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    if (_inProcessRequests.isNotEmpty) ...[
+                      _buildSectionHeader('Request Process', Icons.sync, Colors.blue),
+                      ..._inProcessRequests.map((a) => _buildAlertCard(a)),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_completedRequests.isNotEmpty) ...[
+                      _buildSectionHeader('Request Completed', Icons.check_circle_outline, Colors.green),
+                       ..._completedRequests.map((a) => _buildAlertCard(a)),
+                    ],
+                  ],
+                ),
     );
   }
 
@@ -76,13 +152,8 @@ class HospitalAlertsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAlertCard({
-    required String title,
-    required String message,
-    required String time,
-    required Color priorityColor,
-    String? actionText,
-  }) {
+  Widget _buildAlertCard(Map<String, dynamic> alert) {
+    final priorityColor = alert['color'] as Color;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1,
@@ -91,32 +162,45 @@ class HospitalAlertsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: priorityColor.withOpacity(0.5), width: 1),
       ),
-      child: Container(
-         padding: const EdgeInsets.all(12.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border(left: BorderSide(color: priorityColor, width: 4)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: priorityColor)),
-                  const SizedBox(height: 4),
-                  Text(message, style: const TextStyle(color: Colors.black87, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  Text(time, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                ],
+      child: InkWell(
+        onTap: () {
+          if (alert['request'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HospitalRequestDetailsPage(request: alert['request']),
               ),
-            ),
-            if (actionText != null)
-              TextButton(
-                onPressed: () {},
-                child: Text(actionText, style: TextStyle(color: priorityColor, fontWeight: FontWeight.bold, fontSize: 12)),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+           padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border(left: BorderSide(color: priorityColor, width: 4)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(alert['title'], style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: priorityColor)),
+                    const SizedBox(height: 4),
+                    Text(alert['message'], style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    Text(alert['time'], style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                  ],
+                ),
               ),
-          ],
+              if (alert['action'] != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(alert['action'], style: TextStyle(color: priorityColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+            ],
+          ),
         ),
       ),
     );

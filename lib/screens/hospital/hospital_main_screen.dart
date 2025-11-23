@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/hospital/hospital_alerts_page.dart';
 import 'package:jeevandhara/screens/hospital/hospital_home_page.dart';
 import 'package:jeevandhara/screens/hospital/hospital_profile_page.dart';
-import 'package:jeevandhara/screens/hospital/hospital_requests_page.dart';
+// HospitalRequestsPage import removed
 
 class HospitalMainScreen extends StatefulWidget {
   const HospitalMainScreen({super.key});
@@ -16,7 +16,7 @@ class _HospitalMainScreenState extends State<HospitalMainScreen> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     HospitalHomePage(),
-    HospitalRequestsPage(),
+    // HospitalRequestsPage removed
     HospitalAlertsPage(),
     HospitalProfilePage(),
   ];
@@ -46,7 +46,7 @@ class _HospitalMainScreenState extends State<HospitalMainScreen> {
             type: BottomNavigationBarType.fixed,
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: 'Requests'),
+              // Requests item removed
               BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: 'Alerts'),
               BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
             ],
