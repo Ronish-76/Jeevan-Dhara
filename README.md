@@ -98,4 +98,4 @@
 ​
  ## 📄 License
 ​
- This project is licensed under the MIT License.Read README.mdTo update the README file, I'll provide a more comprehensive description of the Jeevan Dhara project, highlighting its purpose and features.Here's the plan:1.Overwrite README.md with updated content describing the project features (Donor, Requester, Hospital, Blood Bank modules), tech stack (Flutter + Node.js/MongoDB), and setup instructions.Let's update README.md.Edited:README.md-10 +84
+ This project is licensed under the MIT License.Read README.md
