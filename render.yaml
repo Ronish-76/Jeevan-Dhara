@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: jeevan-dhara-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://jeevan-dhara-s7wo.onrender.com
+    healthCheckPath: /api/health
+    autoDeploy: true

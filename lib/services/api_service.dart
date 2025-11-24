@@ -12,7 +12,7 @@ class ApiService {
   static final instance = ApiService._();
 
   // Using ADB reverse port forwarding
-  static const _baseUrl = 'http://localhost:5000/api';
+  static const _baseUrl = 'https://jeevan-dhara-s7wo.onrender.com/api';
 
   Future<List<LocationModel>> fetchNearbyFacilities({
     required double lat,

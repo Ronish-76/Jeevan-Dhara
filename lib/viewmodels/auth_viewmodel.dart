@@ -15,7 +15,7 @@ class AuthViewModel extends BaseViewModel {
 
   // Your backend API's base URL.
   // Using ADB reverse port forwarding: adb reverse tcp:5000 tcp:5000
-  static const String _baseUrl = 'http://localhost:5000/api';
+  static const String _baseUrl = 'https://jeevan-dhara-s7wo.onrender.com/api';
 
   // --- Core Authentication State ---
 
