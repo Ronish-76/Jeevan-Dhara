@@ -48,10 +48,12 @@ class RequesterBloodBankScreen extends StatefulWidget {
   const RequesterBloodBankScreen({super.key});
 
   @override
-  State<RequesterBloodBankScreen> createState() => _RequesterBloodBankScreenState();
+  State<RequesterBloodBankScreen> createState() =>
+      _RequesterBloodBankScreenState();
 }
 
 class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
+<<<<<<< HEAD
   late Future<List<BloodBank>> _bloodBanksFuture;
   List<BloodBank> _allBloodBanks = [];
   List<BloodBank> _filteredBloodBanks = [];
@@ -80,6 +82,58 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
   }
 
   // Filter logic removed
+=======
+  final List<BloodBank> _bloodBanks = [
+    BloodBank(
+      name: 'Central Blood Bank',
+      location: 'Maharajgunj, Kathmandu',
+      distance: 2.5,
+      phone: '+977-1-4412303',
+      stock: {
+        'A+': 15,
+        'O+': 8,
+        'B+': 2,
+        'AB+': 0,
+        'A-': 5,
+        'O-': 1,
+        'B-': 12,
+        'AB-': -1,
+      },
+    ),
+    BloodBank(
+      name: 'Red Cross Society',
+      location: 'Kalimati, Kathmandu',
+      distance: 4.2,
+      phone: '+977-1-4270654',
+      stock: {
+        'A+': 5,
+        'O+': 20,
+        'B+': 10,
+        'AB+': 3,
+        'A-': 0,
+        'O-': 6,
+        'B-': 8,
+        'AB-': 2,
+      },
+    ),
+    BloodBank(
+      name: 'Grande Hospital Bank',
+      location: 'Tokha, Kathmandu',
+      distance: 7.1,
+      phone: '+977-1-5159266',
+      stock: {
+        'A+': 8,
+        'O+': 12,
+        'B+': 18,
+        'AB+': 6,
+        'A-': 3,
+        'O-': 4,
+        'B-': 0,
+        'AB-': 1,
+      },
+    ),
+  ];
+>>>>>>> map-feature
 
   @override
   Widget build(BuildContext context) {
@@ -143,8 +197,48 @@ class _RequesterBloodBankScreenState extends State<RequesterBloodBankScreen> {
     );
   }
 
+<<<<<<< HEAD
   // _buildSearchBar removed
   // _buildMapPreview removed
+=======
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: const Color(0xFFD32F2F),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: const TextField(
+          decoration: InputDecoration(
+            icon: Icon(Icons.search, color: Colors.grey),
+            hintText: 'Search by name or location...',
+            border: InputBorder.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapPreview() {
+    return Container(
+      height: 150, // Static height for map preview
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF0F0F0), // Placeholder color
+        image: const DecorationImage(
+          image: NetworkImage(
+            'https://i.stack.imgur.com/g216T.png',
+          ), // Placeholder map image
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+>>>>>>> map-feature
 
   Widget _buildInfoBanner() {
     return Container(
@@ -208,7 +302,10 @@ class BloodBankCard extends StatelessWidget {
           children: [
             _buildCardHeader(),
             const SizedBox(height: 12),
-            const Text('Available Blood Units:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Available Blood Units:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             _buildStockGrid(),
             const SizedBox(height: 16),
@@ -223,22 +320,52 @@ class BloodBankCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.home_work_outlined, color: Color(0xFFD32F2F), size: 36),
+        const Icon(
+          Icons.home_work_outlined,
+          color: Color(0xFFD32F2F),
+          size: 36,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(bank.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              Text(
+                bank.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(bank.location, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
+              Text(
+                bank.location,
+                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+              ),
               const SizedBox(height: 4),
+<<<<<<< HEAD
               if (bank.phone.isNotEmpty)
                 Text(bank.phone, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
             ],
           ),
         ),
         // Text('${bank.distance} km', style: const TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.w500)),
+=======
+              Text(
+                bank.phone,
+                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          '${bank.distance} km',
+          style: const TextStyle(
+            color: Color(0xFFD32F2F),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+>>>>>>> map-feature
       ],
     );
   }
@@ -269,8 +396,21 @@ class BloodBankCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(units >= 0 ? units.toString() : '-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _getStockColor(units))),
-              Text(bloodGroup, style: TextStyle(fontSize: 12, color: _getStockColor(units).withOpacity(0.9))),
+              Text(
+                units >= 0 ? units.toString() : '-',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: _getStockColor(units),
+                ),
+              ),
+              Text(
+                bloodGroup,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _getStockColor(units).withOpacity(0.9),
+                ),
+              ),
             ],
           ),
         );
@@ -289,7 +429,9 @@ class BloodBankCard extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: const Color(0xFFD32F2F),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
@@ -302,7 +444,9 @@ class BloodBankCard extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFD32F2F),
               side: const BorderSide(color: Color(0xFFD32F2F)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),

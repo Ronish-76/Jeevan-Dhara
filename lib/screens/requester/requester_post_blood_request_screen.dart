@@ -13,6 +13,7 @@ class RequesterPostBloodRequestScreen extends StatefulWidget {
 
 class _RequesterPostBloodRequestScreenState
     extends State<RequesterPostBloodRequestScreen> {
+<<<<<<< HEAD
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -25,6 +26,8 @@ class _RequesterPostBloodRequestScreenState
   final _unitsController = TextEditingController(text: '1');
   final _detailsController = TextEditingController();
 
+=======
+>>>>>>> map-feature
   String? _selectedBloodGroup;
   bool _notifyViaEmergency = true;
 
@@ -38,6 +41,7 @@ class _RequesterPostBloodRequestScreenState
     'AB+',
     'AB-',
   ];
+<<<<<<< HEAD
 
   @override
   void initState() {
@@ -172,6 +176,15 @@ class _RequesterPostBloodRequestScreenState
       if (mounted) setState(() => _isLoading = false);
     }
   }
+=======
+  final List<String> _cities = [
+    'Kathmandu',
+    'Pokhara',
+    'Lalitpur',
+    'Bhaktapur',
+    'Biratnagar',
+  ];
+>>>>>>> map-feature
 
   @override
   Widget build(BuildContext context) {
@@ -191,6 +204,7 @@ class _RequesterPostBloodRequestScreenState
         ),
       ),
       backgroundColor: const Color(0xFFF9F9F9),
+<<<<<<< HEAD
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -279,17 +293,85 @@ class _RequesterPostBloodRequestScreenState
                 ),
               ),
             ),
+=======
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFormField(
+              label: 'Patient Name',
+              hint: "Enter patient's full name",
+            ),
+            const SizedBox(height: 12),
+            _buildDropdownField(
+              label: 'Blood Group Required',
+              hint: 'Select blood group',
+              value: _selectedBloodGroup,
+              items: _bloodGroups,
+              onChanged: (value) {
+                setState(() {
+                  _selectedBloodGroup = value;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildFormField(
+              label: 'Hospital Name',
+              hint: 'Enter hospital or clinic name',
+            ),
+            const SizedBox(height: 12),
+            _buildDropdownField(
+              label: 'City',
+              hint: 'Select city',
+              value: _selectedCity,
+              items: _cities,
+              onChanged: (value) {
+                setState(() {
+                  _selectedCity = value;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildFormField(
+              label: 'Contact Number',
+              hint: 'Enter contact number',
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 12),
+            _buildFormField(
+              label: 'Additional Details',
+              hint:
+                  'Add any additional information (units needed, urgency details, etc.)',
+              maxLines: 4,
+            ),
+            const SizedBox(height: 20),
+            _buildPrivacyToggle(),
+            const SizedBox(height: 20),
+            _buildSubmitButton(),
+            const SizedBox(height: 30),
+            _buildNearestBanksSection(),
+          ],
+        ),
+      ),
+>>>>>>> map-feature
     );
   }
 
   Widget _buildFormField({
+<<<<<<< HEAD
     required TextEditingController controller,
+=======
+>>>>>>> map-feature
     required String label,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+<<<<<<< HEAD
     bool readOnly = false,
     String? Function(String?)? validator,
+=======
+>>>>>>> map-feature
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +390,11 @@ class _RequesterPostBloodRequestScreenState
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
+<<<<<<< HEAD
             fillColor: readOnly ? Colors.grey[200] : Colors.white,
+=======
+            fillColor: Colors.white,
+>>>>>>> map-feature
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -339,7 +425,11 @@ class _RequesterPostBloodRequestScreenState
     required String hint,
     String? value,
     required List<String> items,
+<<<<<<< HEAD
     void Function(String?)? onChangedCallback,
+=======
+    required ValueChanged<String?> onChanged,
+>>>>>>> map-feature
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +483,7 @@ class _RequesterPostBloodRequestScreenState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -425,7 +515,7 @@ class _RequesterPostBloodRequestScreenState
                 _notifyViaEmergency = value;
               });
             },
-            activeColor: const Color(0xFFD32F2F),
+            activeTrackColor: const Color(0xFFD32F2F),
           ),
         ],
       ),
@@ -451,8 +541,120 @@ class _RequesterPostBloodRequestScreenState
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+<<<<<<< HEAD
           ),
         ),
+=======
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNearestBanksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Nearest Blood Banks",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Tip: Contact blood banks directly for immediate availability. Your request will also be visible to registered donors in your area.",
+          style: TextStyle(color: Color(0xFF666666), fontSize: 12),
+        ),
+        const SizedBox(height: 16),
+        _buildBankCard(
+          "Central Blood Bank",
+          "Kathmandu - 2.5 km",
+          "+977-14225544",
+        ),
+        const SizedBox(height: 12),
+        _buildBankCard(
+          "Red Cross Blood Bank",
+          "Lalitpur - 4.1 km",
+          "+977-15549090",
+        ),
+        const SizedBox(height: 12),
+        _buildBankCard(
+          "Himalayan Blood Bank",
+          "Bhaktapur - 7.8 km",
+          "+977-16610555",
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBankCard(String name, String location, String phone) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.home_work_outlined,
+            color: Color(0xFFD32F2F),
+            size: 32,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: Color(0xFF666666),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      location,
+                      style: const TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.call_outlined,
+                      size: 14,
+                      color: Color(0xFF666666),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      phone,
+                      style: const TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+>>>>>>> map-feature
       ),
     );
   }

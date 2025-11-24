@@ -81,9 +81,14 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
         elevation: 0,
         actions: [
           IconButton(
+<<<<<<< HEAD
             onPressed: _handleLogout,
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
+=======
+            onPressed: () {},
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+>>>>>>> map-feature
           ),
         ],
       ),
@@ -135,26 +140,50 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
       ),
       child: Column(
         children: [
+<<<<<<< HEAD
           const CircleAvatar(
+=======
+          CircleAvatar(
+>>>>>>> map-feature
             radius: 40,
             backgroundColor: Colors.white,
             child: Icon(Icons.person, size: 50, color: Color(0xFFD32F2F)),
           ),
+<<<<<<< HEAD
           const SizedBox(height: 12),
           Text(
             donor.fullName ?? 'N/A',
             style: const TextStyle(
+=======
+          SizedBox(height: 12),
+          Text(
+            'Rajesh Kumar',
+            style: TextStyle(
+>>>>>>> map-feature
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
           ),
+<<<<<<< HEAD
           const SizedBox(height: 4),
           Text(
             'Blood Group: ${donor.bloodGroup ?? 'N/A'}',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           // Removed "Member since..." as requested
+=======
+          SizedBox(height: 4),
+          Text(
+            'Blood Group: A+',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Member since January 2022',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+>>>>>>> map-feature
         ],
       ),
     );
@@ -207,6 +236,7 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+<<<<<<< HEAD
         color: isEligible
             ? const Color(0xFFE8F5E9)
             : const Color(0xFFFFEBEE), 
@@ -231,6 +261,21 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
               color: isEligible
                   ? const Color(0xFF388E3C)
                   : const Color(0xFFD32F2F),
+=======
+        color: const Color(0xFFE8F5E9), // Light Green
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4CAF50)),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50)),
+          SizedBox(width: 12),
+          Text(
+            'Eligible to Donate',
+            style: TextStyle(
+              color: Color(0xFF388E3C),
+>>>>>>> map-feature
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -244,6 +289,7 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     return _buildSectionCard(
       title: 'Personal Information',
       children: [
+<<<<<<< HEAD
         _buildInfoRow(
           Icons.phone_outlined,
           'Phone Number',
@@ -254,11 +300,23 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
           Icons.location_on_outlined,
           'Location',
           donor.location ?? 'N/A',
+=======
+        _buildInfoRow(Icons.phone_outlined, 'Phone Number', '+977 9841234567'),
+        _buildInfoRow(Icons.email_outlined, 'Email', 'rajesh.kumar@email.com'),
+        _buildInfoRow(
+          Icons.location_on_outlined,
+          'Location',
+          'Kathmandu, Nepal',
+>>>>>>> map-feature
         ),
         _buildInfoRow(
           Icons.calendar_today_outlined,
           'Last Donation',
+<<<<<<< HEAD
           donor.lastDonationDate?.toString().split(' ')[0] ?? 'N/A',
+=======
+          'March 15, 2024',
+>>>>>>> map-feature
         ),
       ],
     );
@@ -268,11 +326,41 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     return _buildSectionCard(
       title: 'Account Management',
       children: [
+<<<<<<< HEAD
         // Removed Notifications, Share, View History as requested
         SizedBox(
           width: double.infinity,
           child: TextButton.icon(
             onPressed: _handleLogout,
+=======
+        _buildManagementRow(
+          Icons.notifications_outlined,
+          'Notifications',
+          trailing: Switch(
+            value: true,
+            onChanged: (val) {},
+            activeColor: const Color(0xFFD32F2F),
+          ),
+        ),
+        _buildManagementRow(Icons.share_outlined, 'Share Jeevan Dhara'),
+        _buildManagementRow(
+          Icons.history_outlined,
+          'View Donation History',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DonorDonationHistoryPage(),
+              ),
+            );
+          },
+        ),
+        const Divider(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton.icon(
+            onPressed: () {},
+>>>>>>> map-feature
             icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
             label: const Text(
               'Log Out',
@@ -328,5 +416,24 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     );
   }
 
+<<<<<<< HEAD
   // Removed unused _buildManagementRow
+=======
+  Widget _buildManagementRow(
+    IconData icon,
+    String label, {
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF666666)),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+      trailing:
+          trailing ??
+          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      contentPadding: EdgeInsets.zero,
+      onTap: onTap,
+    );
+  }
+>>>>>>> map-feature
 }

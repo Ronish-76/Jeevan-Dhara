@@ -1,101 +1,37 @@
+# Jeevan Dhara
 
- # jeevandhara
- # Jeevan Dhara - Blood Donation Management System
+Full-stack blood donation platform with a role-aware geospatial map.
 
- A new Flutter project.
- **Jeevan Dhara** is a comprehensive blood donation platform designed to bridge the gap between blood donors, hospitals, blood banks, and requesters. It facilitates real-time coordination for blood requests, donations, and inventory management to save lives efficiently.
+## Project Layout
 
- ## Getting Started
- ## 🚀 Features
+- `lib/` – Flutter application with Google Maps integration (`lib/screens/map/map_screen.dart`)
+- `server/` – Node.js + MongoDB backend for geospatial queries (`/api/map/nearby`)
 
- This project is a starting point for a Flutter application.
- The application caters to four distinct user roles, each with tailored functionalities:
+## Backend Setup
 
- A few resources to get you started if this is your first Flutter project:
- ### 1. **Requester (Patient/Family)**
- - **Post Blood Requests:** Create emergency or scheduled blood requests.
- - **Find Donors:** Search for nearby compatible donors.
- - **Track Status:** Monitor the status of blood requests in real-time.
- - **Notifications:** Receive alerts when a donor accepts a request.
+```bash
+cd server
+npm install
+copy env.example .env   # set MONGO_URI and PORT
+npm run seed:locations  # seeds Kathmandu Valley dataset
+npm run dev             # starts Express server
+```
 
- - [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
- - [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
- ### 2. **Donor**
- - **Register & Profile:** maintain a donor profile with blood group and health status.
- - **View Requests:** Browse nearby blood requests compatible with your blood type.
- - **Donate:** Accept requests and track donation history.
- - **Eligibility Check:** Automated checks for donation eligibility based on last donation date.
+## Flutter Setup
 
- For help getting started with Flutter development, view the
- [online documentation](https://docs.flutter.dev/), which offers tutorials,
- samples, guidance on mobile development, and a full API reference.
- ### 3. **Hospital**
- - **Inventory Management:** Track internal blood stock levels.
- - **Request Blood:** Place bulk or specific requests to blood banks.
- - **Verify Donors:** Validate donor information and record donations.
- - **Emergency Alerts:** Broadcast emergency requirements to nearby donors and blood banks.
-​
- ### 4. **Blood Bank**
- - **Stock Management:** comprehensive inventory tracking for all blood groups.
- - **Distribute Blood:** Manage blood distribution to hospitals and requesters.
- - **Organize Drives:** Schedule and manage blood donation drives.
- - **Analytics:** View reports on donation trends and inventory status.
-​
- ## 🛠️ Tech Stack
-​
- - **Frontend:** [Flutter](https://flutter.dev/) (Dart) - Cross-platform mobile application.
- - **Backend:** [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/).
- - **Database:** [MongoDB](https://www.mongodb.com/) - NoSQL database for storing user and transaction data.
- - **Authentication:** JWT (JSON Web Tokens) for secure user sessions.
-​
- ## 📱 Getting Started
-​
- ### Prerequisites
- - [Flutter SDK](https://docs.flutter.dev/get-started/install) installed.
- - [Node.js](https://nodejs.org/) and npm installed.
- - [MongoDB](https://www.mongodb.com/) instance (local or Atlas) running.
-​
- ### Installation
-​
- 1.  **Clone the repository:**
-     ```bash
-     git clone <repository-url>
-     cd jeevandhara
-     ```
-​
- 2.  **Setup Backend:**
-     - Navigate to the backend directory:
-       ```bash
-       cd Backend
-       ```
-     - Install dependencies:
-       ```bash
-       npm install
-       ```
-     - Create a `.env` file in the `Backend` folder and configure your environment variables (MongoDB URI, JWT Secret, etc.).
-     - Start the server:
-       ```bash
-       npm start
-       ```
-​
- 3.  **Setup Frontend (Flutter):**
-     - Navigate back to the root directory:
-       ```bash
-       cd ..
-       ```
-     - Install Flutter dependencies:
-       ```bash
-       flutter pub get
-       ```
-     - Run the app:
-       ```bash
-       flutter run
-       ```
-​
- ## 🤝 Contribution
-​
- Contributions are welcome! Please feel free to submit a Pull Request.
-​
- ## 📄 License
-​
- This project is licensed under the MIT License.Read README.md
+1. Enable Windows Developer Mode (needed for Flutter plugins on Windows)  
+   `start ms-settings:developers`
+2. Add your Google Maps API key to:
+   - Android: `android/app/src/main/AndroidManifest.xml`
+   - iOS: `ios/Runner/AppDelegate.swift` (`GMSServices.provideAPIKey`)
+   - Web: `web/index.html` `<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY"></script>`
+3. Run the app pointing to the backend (Android uses `10.0.2.2`, iOS `127.0.0.1` by default)
+
+## Map Module Features
+
+- Patients: find nearby hospitals/blood banks, filter by blood type/distance, request blood, get directions
+- Donors: view donation sites, filter by availability, accept requests, navigate
+- Hospitals: scan blood banks, request inventory, track delivery routes
+- Blood Banks: view hospitals/donors, monitor inventory, manage logistics
+
+Backend responses are validated via MongoDB 2dsphere queries; frontend markers surface role-specific actions through a bottom sheet (`lib/widgets/marker_sheet.dart`).

@@ -15,6 +15,7 @@ class RequesterProfileScreen extends StatefulWidget {
 class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.user;
@@ -137,6 +138,35 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
                   validator: (v) => v!.isEmpty ? 'Required' : null,
                 ),
               ],
+=======
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildProfileHeader(),
+            _buildRequestStatistics(),
+            _buildInfoCard(
+              title: 'Personal Information',
+              icon: Icons.person_outline,
+              details: {
+                'Full Name': 'Ramesh Kumar',
+                'Email': 'ramesh@teachinghospital.com',
+                'Phone': '+977-98XXXXXXX',
+                'Hospital Role': 'Emergency Department Coordinator',
+              },
+>>>>>>> map-feature
             ),
           ),
         ),
@@ -234,9 +264,15 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
             child: Icon(Icons.person, size: 60, color: Color(0xFFD32F2F)),
           ),
           const SizedBox(height: 12),
+<<<<<<< HEAD
           Text(
             user?.fullName ?? '',
             style: const TextStyle(
+=======
+          const Text(
+            'Ramesh Kumar',
+            style: TextStyle(
+>>>>>>> map-feature
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -259,6 +295,7 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
     );
   }
 
+<<<<<<< HEAD
   Widget _buildRequestStatistics(String userId) {
     return FutureBuilder<List<dynamic>>(
       future: ApiService().getRequesterBloodRequests(userId),
@@ -330,6 +367,40 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
           ),
         );
       },
+=======
+  Widget _buildRequestStatistics() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _buildStatCard(
+              '12',
+              'Requests Made',
+              Icons.add_alert_outlined,
+              Colors.blue,
+            ),
+            const SizedBox(width: 16),
+            _buildStatCard(
+              '8',
+              'Requests Fulfilled',
+              Icons.check_circle_outline,
+              Colors.green,
+              subtitle: '67% success',
+            ),
+            const SizedBox(width: 16),
+            _buildStatCard(
+              '2',
+              'Active Now',
+              Icons.hourglass_top_outlined,
+              Colors.orange,
+            ),
+          ],
+        ),
+      ),
+>>>>>>> map-feature
     );
   }
 
@@ -379,7 +450,15 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
     );
   }
 
+<<<<<<< HEAD
   Widget _buildHospitalContactsCard(dynamic user) {
+=======
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required Map<String, String> details,
+  }) {
+>>>>>>> map-feature
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -392,6 +471,7 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
           children: [
             Row(
               children: [
+<<<<<<< HEAD
                 const Icon(
                   Icons.local_hospital_outlined,
                   color: Color(0xFFD32F2F),
@@ -464,33 +544,7 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 15,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard({
-    required String title,
-    required IconData icon,
-    required Map<String, String> details,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
+=======
                 Icon(icon, color: const Color(0xFFD32F2F)),
                 const SizedBox(width: 8),
                 Text(
@@ -498,10 +552,13 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
+>>>>>>> map-feature
                   ),
                 ),
               ],
             ),
+<<<<<<< HEAD
+=======
             const Divider(height: 24),
             ...details.entries.map(
               (entry) => Padding(
@@ -523,9 +580,169 @@ class _RequesterProfileScreenState extends State<RequesterProfileScreen> {
                 ),
               ),
             ),
+>>>>>>> map-feature
           ],
         ),
       ),
     );
   }
+
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required Map<String, String> details,
+  }) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+<<<<<<< HEAD
+            Row(
+              children: [
+                Icon(icon, color: const Color(0xFFD32F2F)),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+=======
+            const Row(
+              children: [
+                Icon(Icons.history, color: Color(0xFFD32F2F)),
+                SizedBox(width: 8),
+                Text(
+                  'Recent Requests',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+>>>>>>> map-feature
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+<<<<<<< HEAD
+            ...details.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${entry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Expanded(
+                      child: Text(
+                        entry.value,
+                        style: const TextStyle(color: Color(0xFF666666)),
+                      ),
+                    ),
+                  ],
+=======
+            _buildRequestItem(
+              'O+ Request - Teaching Hospital',
+              'Fulfilled',
+              Colors.green,
+            ),
+            _buildRequestItem(
+              'B- Request - Bir Hospital',
+              'Active',
+              Colors.orange,
+            ),
+            _buildRequestItem(
+              'AB+ Request - Grande Hospital',
+              'Expired',
+              Colors.red,
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.center,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'See All Requests (12)',
+                  style: TextStyle(color: Color(0xFFD32F2F)),
+>>>>>>> map-feature
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+<<<<<<< HEAD
+=======
+
+  Widget _buildRequestItem(String title, String status, Color statusColor) {
+    IconData icon = status == 'Fulfilled'
+        ? Icons.check_circle
+        : (status == 'Active' ? Icons.hourglass_bottom : Icons.cancel);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          Icon(icon, color: statusColor, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Text(title)),
+          Text(
+            status,
+            style: TextStyle(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsFooter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.flash_on, size: 18),
+              label: const Text('Emergency Request'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('New Request'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFD32F2F),
+                side: const BorderSide(color: Color(0xFFD32F2F)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+>>>>>>> map-feature
 }

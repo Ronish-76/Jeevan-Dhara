@@ -1,0 +1,46 @@
+{
+  "name": "jeevan-dhara-server",
+  "version": "1.0.0",
+  "description": "Backend services for Jeevan Dhara blood donation platform",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed:facilities": "node scripts/seedFacilities.js",
+    "create:indexes": "node scripts/createIndexes.js",
+    "lint": "eslint \"src/**/*.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "blood-donation",
+    "express",
+    "mongodb",
+    "geospatial"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "helmet": "^7.1.0",
+    "http-errors": "^2.0.0",
+    "joi": "^17.13.3",
+    "mongodb": "^7.0.0",
+    "mongoose": "^8.6.0",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.12.0",
+    "globals": "^16.5.0",
+    "nodemon": "^3.1.4"
+  }
+}

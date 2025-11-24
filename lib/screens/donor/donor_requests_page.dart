@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:jeevandhara/models/blood_request_model.dart';
 import 'package:jeevandhara/screens/donor/donor_request_details_page.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
+=======
+import 'package:provider/provider.dart';
+
+import '../../models/blood_request_model.dart';
+import '../../viewmodels/donor_viewmodel.dart';
+import 'donor_request_details_page.dart';
+>>>>>>> map-feature
 
 class DonorRequestsPage extends StatefulWidget {
   const DonorRequestsPage({super.key});
@@ -20,6 +28,7 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     _fetchRequests();
   }
 
@@ -71,16 +80,28 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
 
   Color _getUrgencyColor(bool isEmergency) {
     return isEmergency ? const Color(0xFFB71C1C) : const Color(0xFF2196F3);
+=======
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DonorViewModel>().loadUrgentRequests();
+    });
+>>>>>>> map-feature
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<DonorViewModel>();
+    final requests = provider.urgentRequests.where((request) {
+      if (_selectedBloodGroup == null) return true;
+      return request.bloodType == _selectedBloodGroup;
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         title: const Text('Nearby Blood Requests'),
+<<<<<<< HEAD
         // Removed search bar from bottom of AppBar
       ),
       body: Column(
@@ -115,17 +136,152 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
                       ),
           ),
         ],
+=======
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.read<DonorViewModel>().loadUrgentRequests(
+              bloodType: _selectedBloodGroup,
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: const TextField(
+                decoration: InputDecoration(
+                  icon: Icon(Icons.search, color: Colors.grey),
+                  hintText: 'Search by city or blood group',
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => context.read<DonorViewModel>().loadUrgentRequests(
+          bloodType: _selectedBloodGroup,
+        ),
+        child: Column(
+          children: [
+            _buildFilterChips(),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    color: Colors.grey,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    provider.isLoading
+                        ? 'Loading requests near you'
+                        : '${requests.length} requests found near you',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: provider.isLoading && requests.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : requests.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'No requests at the moment. Pull to refresh.',
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: requests.length,
+                      itemBuilder: (context, index) {
+                        return _buildRequestCard(requests[index]);
+                      },
+                    ),
+            ),
+          ],
+        ),
+>>>>>>> map-feature
       ),
     );
   }
 
+<<<<<<< HEAD
   Widget _buildRequestCard(BloodRequest request) {
     final urgencyColor = _getUrgencyColor(request.notifyViaEmergency);
+=======
+  Widget _buildFilterChips() {
+    final bloodGroups = ['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: SizedBox(
+        height: 35,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: bloodGroups.length,
+          itemBuilder: (context, index) {
+            final group = bloodGroups[index];
+            final isSelected = _selectedBloodGroup == group;
+            return ChoiceChip(
+              label: Text(group),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedBloodGroup = selected ? group : null;
+                });
+                context.read<DonorViewModel>().loadUrgentRequests(
+                  bloodType: selected ? group : null,
+                );
+              },
+              selectedColor: const Color(0xFFD32F2F),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+              backgroundColor: const Color(0xFFF0F0F0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              side: BorderSide.none,
+            );
+          },
+          separatorBuilder: (context, index) => const SizedBox(width: 8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestCard(BloodRequestModel request) {
+    final urgencyColor = request.urgency == 'critical'
+        ? const Color(0xFFB71C1C)
+        : const Color(0xFFD32F2F);
+>>>>>>> map-feature
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => DonorRequestDetailsPage(request: request)),
+          MaterialPageRoute(
+            builder: (context) => DonorRequestDetailsPage(request: request),
+          ),
         );
       },
       child: Card(
@@ -143,14 +299,32 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
               Container(
                 width: 50,
                 height: 50,
+<<<<<<< HEAD
                 decoration: BoxDecoration(shape: BoxShape.circle, color: urgencyColor.withOpacity(0.1)),
                 child: Center(child: Text(request.bloodGroup, style: TextStyle(color: urgencyColor, fontSize: 18, fontWeight: FontWeight.bold))),
+=======
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: urgencyColor.withOpacity(0.1),
+                ),
+                child: Center(
+                  child: Text(
+                    request.bloodType,
+                    style: TextStyle(
+                      color: urgencyColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+>>>>>>> map-feature
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+<<<<<<< HEAD
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -170,32 +344,102 @@ class _DonorRequestsPageState extends State<DonorRequestsPage> {
                             ),
                           ),
                       ],
+=======
+                    Text(
+                      request.requesterName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+>>>>>>> map-feature
                     ),
                     const SizedBox(height: 4),
-                    Row(children: [const Icon(Icons.local_hospital_outlined, size: 14, color: Colors.grey), const SizedBox(width: 4), Expanded(child: Text(request.hospitalName, style: const TextStyle(fontSize: 12, color: Colors.grey), overflow: TextOverflow.ellipsis))]),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.local_hospital_outlined,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            request.locationName ?? 'Shared location',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 4),
+<<<<<<< HEAD
                     Row(children: [const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey), const SizedBox(width: 4), Text(request.location, style: const TextStyle(fontSize: 12, color: Colors.grey))]),
                     const SizedBox(height: 4),
                     Row(children: [const Icon(Icons.access_time, size: 14, color: Colors.grey), const SizedBox(width: 4), Text(_getTimeAgo(request.createdAt), style: const TextStyle(fontSize: 12, color: Colors.grey))]),
+=======
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          request.createdAt != null
+                              ? request.createdAt!.toLocal().toString().split('.').first
+                              : 'Date unknown',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+>>>>>>> map-feature
                   ],
                 ),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: () {
+<<<<<<< HEAD
                    Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => DonorRequestDetailsPage(request: request)),
+=======
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          DonorRequestDetailsPage(request: request),
+                    ),
+>>>>>>> map-feature
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD32F2F),
                   foregroundColor: Colors.white,
+<<<<<<< HEAD
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   elevation: 2,
                 ),
                 child: const Text('Accept', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+=======
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+                child: const Text('I Can Help', style: TextStyle(fontSize: 12)),
+>>>>>>> map-feature
               ),
             ],
           ),

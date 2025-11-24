@@ -1,0 +1,173 @@
+{
+  "info": {
+    "name": "Jeevan Dhara API",
+    "description": "Blood donation platform API collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Get Nearby Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations/nearby?lat=27.7172&lng=85.3240&radius=10&role=patient&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "locations", "nearby"],
+              "query": [
+                {"key": "lat", "value": "27.7172", "description": "Latitude"},
+                {"key": "lng", "value": "85.3240", "description": "Longitude"},
+                {"key": "radius", "value": "10", "description": "Radius in km"},
+                {"key": "role", "value": "patient", "description": "User role"},
+                {"key": "bloodType", "value": "O+", "description": "Optional blood type filter"},
+                {"key": "limit", "value": "25", "description": "Max results"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Blood Bank Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations/bloodbanks/:id/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "locations", "bloodbanks", ":id", "inventory"],
+              "variable": [
+                {"key": "id", "value": "blood_bank_id_here"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Seed Locations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-seeding-key",
+                "value": "{{seedingKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations/seed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "locations", "seed"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blood Requests",
+      "item": [
+        {
+          "name": "Create Request from Map",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requesterId\": \"user_id_here\",\n  \"requesterName\": \"John Doe\",\n  \"requesterPhone\": \"+977-1-1234567\",\n  \"bloodType\": \"O+\",\n  \"quantity\": 2,\n  \"urgency\": \"high\",\n  \"latitude\": 27.7172,\n  \"longitude\": 85.3240,\n  \"address\": {\n    \"street\": \"Thamel\",\n    \"city\": \"Kathmandu\",\n    \"district\": \"Kathmandu\"\n  },\n  \"notes\": \"Emergency request\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/create-from-map",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "create-from-map"]
+            }
+          }
+        },
+        {
+          "name": "Get Urgent Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/urgent?lat=27.7172&lng=85.3240&radius=20&bloodType=O+",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "urgent"],
+              "query": [
+                {"key": "lat", "value": "27.7172"},
+                {"key": "lng", "value": "85.3240"},
+                {"key": "radius", "value": "20"},
+                {"key": "bloodType", "value": "O+"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Donor",
+      "item": [
+        {
+          "name": "Accept Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestId\": \"request_id_here\",\n  \"donorId\": \"donor_id_here\",\n  \"locationId\": \"location_id_here\",\n  \"notes\": \"Will arrive in 30 minutes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donor/accept-request",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donor", "accept-request"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        {
+          "name": "Get Supply Routes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/routes/supply?fromId=facility_id&toId=destination_id&optimize=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "routes", "supply"],
+              "query": [
+                {"key": "fromId", "value": "facility_id", "description": "Origin facility ID"},
+                {"key": "toId", "value": "destination_id", "description": "Destination ID"},
+                {"key": "optimize", "value": "true", "description": "Get Google Directions"},
+                {"key": "facilityType", "value": "blood_bank", "description": "Optional facility type"}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "seedingKey",
+      "value": "your-seeding-key-here",
+      "type": "string"
+    }
+  ]
+}
+

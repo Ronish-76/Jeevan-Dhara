@@ -1,57 +1,87 @@
-class BloodRequest {
-  final String id;
-  final String patientName;
-  final String patientPhone;
-  final String bloodGroup;
-  final String hospitalName;
-  final String location;
-  final String contactNumber;
-  final String? additionalDetails;
-  final int units;
-  final bool notifyViaEmergency;
-  final String status;
-  final DateTime createdAt;
-  final String? requesterName;
-  final String? donorId;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-  BloodRequest({
+/// Represents a real-time blood request on the map.
+class BloodRequestModel {
+
+  final String id;
+  final String requesterName;
+  final String requesterContact; // Added
+  final String bloodGroup;
+  final int units;
+  final double lat;
+  final double lng;
+  final String status; // e.g., 'active', 'pending', 'fulfilled'
+  final String? notes;
+  final String? responderName;
+  final String? locationName; // Added
+  final DateTime? createdAt; // Added
+  final double? distanceKm; // Added
+  final String? urgency;
+
+  const BloodRequestModel({
     required this.id,
-    required this.patientName,
-    required this.patientPhone,
+    required this.requesterName,
+    required this.requesterContact, // Added
     required this.bloodGroup,
-    required this.hospitalName,
-    required this.location,
-    required this.contactNumber,
-    this.additionalDetails,
     required this.units,
-    required this.notifyViaEmergency,
+    required this.lat,
+    required this.lng,
     required this.status,
-    required this.createdAt,
-    this.requesterName,
-    this.donorId,
+    this.notes,
+    this.responderName,
+    this.locationName,
+    this.createdAt,
+    this.distanceKm,
+    this.urgency,
   });
 
-  factory BloodRequest.fromJson(Map<String, dynamic> json) {
-    // Map 'unitsRequired' from HospitalBloodRequest to 'units'
-    // Map 'notes' from HospitalBloodRequest to 'additionalDetails'
-    
-    return BloodRequest(
-      id: json['_id'] ?? '',
-      patientName: json['patientName'] ?? '',
-      patientPhone: json['patientPhone'] ?? '',
-      bloodGroup: json['bloodGroup'] ?? '',
-      hospitalName: json['hospitalName'] ?? (json['hospital'] is Map ? json['hospital']['hospitalName'] : ''),
-      location: json['location'] ?? (json['hospital'] is Map ? json['hospital']['address'] : ''),
-      contactNumber: json['contactNumber'] ?? (json['hospital'] is Map ? json['hospital']['phoneNumber'] : ''),
-      additionalDetails: json['additionalDetails'] ?? json['notes'],
-      units: json['units'] ?? json['unitsRequired'] ?? 1,
-      notifyViaEmergency: json['notifyViaEmergency'] ?? (json['urgency'] == 'critical' || json['urgency'] == 'high'),
-      status: json['status'] ?? 'pending',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-      requesterName: json['requester'] != null && json['requester'] is Map 
-          ? json['requester']['fullName'] 
-          : (json['hospital'] is Map ? json['hospital']['hospitalName'] : null),
-      donorId: json['donor'] is String ? json['donor'] : (json['donor'] != null && json['donor'] is Map ? json['donor']['_id'] : null),
+  // Getters for compatibility
+  String get bloodType => bloodGroup;
+
+  factory BloodRequestModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final locationData = data['location'] ?? data['position'];
+    GeoPoint? location;
+    if (locationData is GeoPoint) {
+      location = locationData;
+    } else if (locationData is Map && locationData.containsKey('geopoint')) {
+      location = locationData['geopoint'] as GeoPoint?;
+    }
+    return BloodRequestModel(
+      id: doc.id,
+      requesterName: data['requesterName'] ?? '',
+      requesterContact: data['requesterContact'] ?? '', // Added
+      bloodGroup: data['bloodGroup'] ?? '',
+      units: data['units'] as int? ?? 0,
+      lat: location?.latitude ?? 0.0,
+      lng: location?.longitude ?? 0.0,
+      status: data['status'] ?? 'pending',
+      notes: data['notes'] as String?,
+      responderName: data['responderName'] as String?,
+      locationName: data['locationName'] as String?,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      distanceKm: (data['distance'] as num?)?.toDouble(),
+      urgency: data['urgency'] as String?,
+    );
+  }
+
+  factory BloodRequestModel.fromJson(Map<String, dynamic> json) {
+    final location = json['location']?['coordinates'] as List?;
+    return BloodRequestModel(
+      id: json['_id'] as String,
+      requesterName: json['requesterName'] as String,
+      requesterContact: json['requesterContact'] as String? ?? '', // Added
+      bloodGroup: json['bloodGroup'] as String,
+      units: json['units'] as int,
+      lat: location?[1] as double? ?? 0.0, // Backend sends [lng, lat]
+      lng: location?[0] as double? ?? 0.0,
+      status: json['status'] as String,
+      notes: json['notes'] as String?,
+      responderName: json['responderName'] as String?,
+      locationName: json['locationName'] as String?,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
+      distanceKm: (json['distance'] as num?)?.toDouble(),
+      urgency: json['urgency'] as String?,
     );
   }
 }

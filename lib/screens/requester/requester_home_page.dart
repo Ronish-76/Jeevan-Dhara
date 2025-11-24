@@ -1,5 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:jeevandhara/screens/requester/requester_blood_bank_screen.dart';
+import 'package:jeevandhara/screens/map/blood_bank_request_map_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_emergency_delivery_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_find_donor_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_post_blood_request_screen.dart';
@@ -11,7 +12,9 @@ import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/models/blood_request_model.dart';
 
 class RequesterHomePage extends StatefulWidget {
-  const RequesterHomePage({super.key});
+  final User user;
+
+  const RequesterHomePage({super.key, required this.user});
 
   @override
   State<RequesterHomePage> createState() => _RequesterHomePageState();
@@ -42,6 +45,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
   }
 
   Widget _buildHeader() {
+<<<<<<< HEAD
     final user = Provider.of<AuthProvider>(context).user;
     return Container(
       padding: const EdgeInsets.only(top: 60, bottom: 20, left: 20, right: 20),
@@ -76,6 +80,90 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w600,
+=======
+    // ... This widget is fine, no changes needed ...
+    return SizedBox(
+      height: 200,
+      child: Stack(
+        children: [
+          Container(
+            height: 180,
+            decoration: const BoxDecoration(
+              color: Color(0xFFD32F2F),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 60,
+            left: 20,
+            right: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text(
+                      'Jeevan Dhara',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Save lives, donate blood',
+                      style: TextStyle(color: Color(0xFFF5F5F5), fontSize: 14),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.water_drop,
+                    color: Color(0xFFD32F2F),
+                    size: 28,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              height: 55,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const TextField(
+                decoration: InputDecoration(
+                  icon: Icon(Icons.search, color: Colors.grey),
+                  hintText: 'Search donors, requests, or blood banks',
+                  border: InputBorder.none,
+                ),
+              ),
+>>>>>>> map-feature
             ),
           ),
         ],
@@ -101,14 +189,22 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
             iconColor: Colors.white,
             textColor: Colors.white,
             backgroundColor: const Color(0xFFD32F2F),
+<<<<<<< HEAD
             onTap: () async {
               await Navigator.push(
+=======
+            onTap: () {
+              Navigator.push(
+>>>>>>> map-feature
                 context,
                 MaterialPageRoute(
                   builder: (context) => const RequesterPostBloodRequestScreen(),
                 ),
               );
+<<<<<<< HEAD
               _refreshRequests();
+=======
+>>>>>>> map-feature
             },
           ),
           _buildFeatureCard(
@@ -138,7 +234,11 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+<<<<<<< HEAD
                   builder: (context) => const RequesterBloodBankScreen(),
+=======
+                  builder: (context) => const BloodBankRequestMapScreen(),
+>>>>>>> map-feature
                 ),
               );
             },
@@ -155,7 +255,11 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
+<<<<<<< HEAD
                       const RequesterEmergencyDeliveryScreen(),
+=======
+                  const RequesterEmergencyDeliveryScreen(),
+>>>>>>> map-feature
                 ),
               );
             },
@@ -165,6 +269,10 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // ... The rest of the file is unchanged and correct ...
+>>>>>>> map-feature
   Widget _buildFeatureCard({
     required String title,
     required String subtitle,
@@ -183,9 +291,15 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
+<<<<<<< HEAD
               color: Colors.black.withOpacity(0.15),
               blurRadius: 12,
               offset: const Offset(0, 6),
+=======
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+>>>>>>> map-feature
             ),
           ],
         ),
@@ -227,6 +341,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
+<<<<<<< HEAD
                 'My Requests',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
@@ -240,6 +355,13 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                   );
                   _refreshRequests();
                 },
+=======
+                'Recent Requests',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              TextButton(
+                onPressed: () {},
+>>>>>>> map-feature
                 child: const Text(
                   'View All',
                   style: TextStyle(color: Color(0xFFD32F2F)),
@@ -248,6 +370,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
             ],
           ),
           const SizedBox(height: 10),
+<<<<<<< HEAD
           FutureBuilder(
             future: ApiService().getRequesterBloodRequests(user.id!),
             builder: (context, snapshot) {
@@ -274,12 +397,113 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                     .toList(),
               );
             },
+=======
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFD32F2F).withOpacity(0.1),
+                  ),
+                  child: const Icon(Icons.water_drop, color: Color(0xFFD32F2F)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Ramesh Kumar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '2 units',
+                            style: TextStyle(
+                              color: Color(0xFFD32F2F),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _buildPillTag(
+                            'O+',
+                            const Color(0xFFD32F2F),
+                            Colors.white,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildPillTag(
+                            'Critical',
+                            const Color(0xFFC62828),
+                            Colors.white,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Kathmandu Medical College',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '15 min ago',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+>>>>>>> map-feature
           ),
         ],
       ),
     );
   }
 
+<<<<<<< HEAD
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
@@ -407,6 +631,21 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
               // Removed Action Buttons (Delete/Cancel) as per request for Home Page view
             ],
           ),
+=======
+  Widget _buildPillTag(String text, Color backgroundColor, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+>>>>>>> map-feature
         ),
       ),
     );

@@ -1,0 +1,20 @@
+name: shazzy_map
+description: A powerful and flexible Google Maps wrapper for Jeevan Dhara.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_maps_flutter: ^2.5.0
+  geolocator: ^11.1.0
+  url_launcher: ^6.3.1
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "333412036734",
+    "project_id": "jeevandhara-d1c49",
+    "storage_bucket": "jeevandhara-d1c49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333412036734:android:a388d24072c05e8fc3e82f",
+        "android_client_info": {
+          "package_name": "com.example.jeevandhara"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjYiXpxaV58CUi1J_lM_mms-yHyc1Sr94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
