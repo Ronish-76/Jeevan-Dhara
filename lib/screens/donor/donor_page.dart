@@ -6,8 +6,12 @@ class DonorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Donor Page')),
-      body: const Center(child: Text('This is the Donor Page')),
+      appBar: AppBar(
+        title: const Text('Donor Page'),
+      ),
+      body: const Center(
+        child: Text('This is the Donor Page'),
+      ),
     );
   }
 }

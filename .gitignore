@@ -43,14 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Environment files (contains sensitive data)
-.env
-.env.local
-.env.production
-server/.env
-server/.env.local
-server/.env.production
-
-# Server dependencies
-server/node_modules/

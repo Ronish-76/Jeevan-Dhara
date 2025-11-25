@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/donor_model.dart';
-<<<<<<< HEAD
 import 'package:jeevandhara/services/api_service.dart';
-=======
-import 'package:jeevandhara/models/location_model.dart';
-import 'package:jeevandhara/screens/map/map_screen.dart';
->>>>>>> map-feature
 import 'package:jeevandhara/screens/requester/requester_donor_profile_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../user/find_donor_screen.dart';
 
 class RequesterFindDonorScreen extends StatefulWidget {
   const RequesterFindDonorScreen({super.key});
@@ -20,46 +13,8 @@ class RequesterFindDonorScreen extends StatefulWidget {
 }
 
 class _RequesterFindDonorScreenState extends State<RequesterFindDonorScreen> {
-<<<<<<< HEAD
   late Future<List<Donor>> _donorsFuture;
   String _selectedBloodGroup = 'All';
-=======
-  // Sample data for donors
-  final List<Donor> _donors = [
-    Donor(
-      name: 'Rajesh Thapa',
-      bloodGroup: 'A+',
-      location: 'Kathmandu',
-      isAvailable: true,
-      lastDonationMonthsAgo: 3,
-      totalDonations: 5,
-    ),
-    Donor(
-      name: 'Sunita Sharma',
-      bloodGroup: 'O+',
-      location: 'Pokhara',
-      isAvailable: false,
-      lastDonationMonthsAgo: 1,
-      totalDonations: 2,
-    ),
-    Donor(
-      name: 'Bikash Rai',
-      bloodGroup: 'B-',
-      location: 'Lalitpur',
-      isAvailable: true,
-      lastDonationMonthsAgo: 6,
-      totalDonations: 8,
-    ),
-    Donor(
-      name: 'Anjali Gurung',
-      bloodGroup: 'AB+',
-      location: 'Kathmandu',
-      isAvailable: true,
-      lastDonationMonthsAgo: 2,
-      totalDonations: 1,
-    ),
-  ];
->>>>>>> map-feature
 
   @override
   void initState() {
@@ -83,35 +38,8 @@ class _RequesterFindDonorScreenState extends State<RequesterFindDonorScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-<<<<<<< HEAD
         title: const Text('Find Donors', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
-=======
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Find Donors'),
-            Text(
-              '${_donors.length} donors found',
-              style: const TextStyle(fontSize: 14, color: Colors.white70),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.map),
-            tooltip: 'Open Map',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MapScreen(role: UserRole.patient), // <-- Corrected navigation
-                ),
-              );
-            },
-          ),
-        ],
->>>>>>> map-feature
       ),
       backgroundColor: Colors.white,
       body: Column(
@@ -322,18 +250,12 @@ class DonorCard extends StatelessWidget {
             children: [
               const Icon(Icons.location_on, color: Color(0xFFD32F2F), size: 14),
               const SizedBox(width: 4),
-<<<<<<< HEAD
               Expanded(
                 child: Text(
                   donor.location,
                   style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
-=======
-              Text(
-                donor.location,
-                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
->>>>>>> map-feature
               ),
             ],
           ),

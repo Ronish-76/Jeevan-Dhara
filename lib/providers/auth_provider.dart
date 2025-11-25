@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/user_model.dart';
@@ -128,6 +127,3 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-=======
-
->>>>>>> map-feature

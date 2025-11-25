@@ -1,30 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:jeevandhara/screens/donor/donor_profile_screen.dart';
 
-import '../../viewmodels/blood_request_viewmodel.dart';
-import '../donor/donor_profile_screen.dart';
-
-<<<<<<< HEAD
 import 'package:jeevandhara/models/user_model.dart';
-=======
-class Donor {
-  final String name;
-  final String bloodGroup;
-  final String location;
-  final bool isAvailable;
-  final int lastDonationMonthsAgo;
-  final int totalDonations;
-
-  Donor({
-    required this.name,
-    required this.bloodGroup,
-    required this.location,
-    required this.isAvailable,
-    required this.lastDonationMonthsAgo,
-    required this.totalDonations,
-  });
-}
->>>>>>> map-feature
 
 class FindDonorScreen extends StatefulWidget {
   const FindDonorScreen({super.key});
@@ -34,7 +11,6 @@ class FindDonorScreen extends StatefulWidget {
 }
 
 class _FindDonorScreenState extends State<FindDonorScreen> {
-<<<<<<< HEAD
   // Sample data for donors
   final List<User> _donors = [
     User(
@@ -70,39 +46,8 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
       totalDonations: 1,
     ),
   ];
-=======
-  List<Donor> _donors = [];
-  String _selectedFilter = 'All';
-  bool _loading = true;
->>>>>>> map-feature
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDonors());
-  }
-
-  Future<void> _loadDonors() async {
-    final provider = context.read<BloodRequestViewModel>();
-    await provider.fetchActiveRequests(forceRefresh: true);
-    final donors = provider.requests
-        .where((request) => request.responderName != null)
-        .map(
-          (request) => Donor(
-            name: request.responderName ?? 'Anonymous donor',
-            bloodGroup: request.bloodType,
-            location: request.locationName ?? 'Shared location',
-            isAvailable: request.status == 'responded',
-            lastDonationMonthsAgo: 1,
-            totalDonations: request.units,
-          ),
-        )
-        .toList();
-    setState(() {
-      _donors = donors;
-      _loading = false;
-    });
-  }
+  String _selectedFilter = 'A+';
 
   @override
   Widget build(BuildContext context) {
@@ -115,45 +60,29 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
           children: [
             const Text('Find Donors'),
             Text(
-              _loading ? 'Loading donors...' : '${_donors.length} donors found',
+              '${_donors.length} donors found',
               style: const TextStyle(fontSize: 14, color: Colors.white70),
             ),
           ],
         ),
       ),
       backgroundColor: Colors.white,
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildSearchBar(),
-                _buildFilterChips(),
-                Expanded(
-                  child: _donors.isEmpty
-                      ? const Center(
-                          child: Text('No donors have responded yet.'),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          itemCount: _filteredDonors.length,
-                          itemBuilder: (context, index) {
-                            return DonorCard(donor: _filteredDonors[index]);
-                          },
-                        ),
-                ),
-              ],
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          _buildFilterChips(),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              itemCount: _donors.length,
+              itemBuilder: (context, index) {
+                return DonorCard(donor: _donors[index]);
+              },
             ),
+          ),
+        ],
+      ),
     );
-  }
-
-  List<Donor> get _filteredDonors {
-    if (_selectedFilter == 'All') return _donors;
-    if (_selectedFilter == 'Available Now') {
-      return _donors.where((donor) => donor.isAvailable).toList();
-    }
-    return _donors
-        .where((donor) => donor.bloodGroup == _selectedFilter)
-        .toList();
   }
 
   Widget _buildSearchBar() {
@@ -179,7 +108,7 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
   }
 
   Widget _buildFilterChips() {
-    final filters = ['All', 'A+', 'B+', 'O+', 'Available Now'];
+    final filters = ['A+', 'B+', 'O+', 'Nearby', 'Available Now'];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: SizedBox(
@@ -219,23 +148,12 @@ class _FindDonorScreenState extends State<FindDonorScreen> {
   }
 }
 
-<<<<<<< HEAD
 class DonorCard extends StatelessWidget {
   final User donor;
-=======
-class DonorCard extends StatefulWidget {
-  final Donor donor;
->>>>>>> map-feature
   const DonorCard({super.key, required this.donor});
 
   @override
-  State<DonorCard> createState() => _DonorCardState();
-}
-
-class _DonorCardState extends State<DonorCard> {
-  @override
   Widget build(BuildContext context) {
-    final donor = widget.donor;
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -248,7 +166,7 @@ class _DonorCardState extends State<DonorCard> {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.1),
+        shadowColor: Colors.black.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: const Color(0xFFFAFAFA),
         child: Opacity(
@@ -257,10 +175,10 @@ class _DonorCardState extends State<DonorCard> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                _buildAvatar(donor),
+                _buildAvatar(),
                 const SizedBox(width: 16),
-                _buildMiddleSection(donor),
-                _buildContactButton(donor),
+                _buildMiddleSection(),
+                _buildContactButton(),
               ],
             ),
           ),
@@ -269,7 +187,7 @@ class _DonorCardState extends State<DonorCard> {
     );
   }
 
-  Widget _buildAvatar(Donor donor) {
+  Widget _buildAvatar() {
     return Container(
       width: 45,
       height: 45,
@@ -279,11 +197,7 @@ class _DonorCardState extends State<DonorCard> {
       ),
       child: Center(
         child: Text(
-<<<<<<< HEAD
           donor.bloodGroup ?? '?',
-=======
-          donor.bloodGroup,
->>>>>>> map-feature
           style: const TextStyle(
             color: Color(0xFFD32F2F),
             fontWeight: FontWeight.bold,
@@ -294,7 +208,7 @@ class _DonorCardState extends State<DonorCard> {
     );
   }
 
-  Widget _buildMiddleSection(Donor donor) {
+  Widget _buildMiddleSection() {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,11 +217,7 @@ class _DonorCardState extends State<DonorCard> {
             children: [
               Flexible(
                 child: Text(
-<<<<<<< HEAD
                   donor.fullName ?? 'Unknown',
-=======
-                  donor.name,
->>>>>>> map-feature
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -341,11 +251,7 @@ class _DonorCardState extends State<DonorCard> {
               const Icon(Icons.location_on, color: Color(0xFFD32F2F), size: 14),
               const SizedBox(width: 4),
               Text(
-<<<<<<< HEAD
                 donor.location ?? 'Unknown',
-=======
-                donor.location,
->>>>>>> map-feature
                 style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
               ),
             ],
@@ -360,7 +266,7 @@ class _DonorCardState extends State<DonorCard> {
     );
   }
 
-  Widget _buildContactButton(Donor donor) {
+  Widget _buildContactButton() {
     return ElevatedButton.icon(
       onPressed: donor.isAvailable ? () {} : null,
       icon: const Icon(Icons.phone, size: 16),

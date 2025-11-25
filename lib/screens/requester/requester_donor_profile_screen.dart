@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/donor_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../user/find_donor_screen.dart';
-
 class RequesterDonorProfileScreen extends StatelessWidget {
   final Donor donor;
 
@@ -38,15 +36,11 @@ class RequesterDonorProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       extendBodyBehindAppBar: true,
-<<<<<<< HEAD
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-=======
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
->>>>>>> map-feature
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -80,7 +74,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
                 'Availability': donor.isAvailable ? 'Available' : 'Unavailable',
                 'Last Donation': donor.lastDonationMonthsAgo > 0 ? '${donor.lastDonationMonthsAgo} months ago' : 'None recorded',
               },
-              icons: {
+               icons: {
                 'Blood Group': Icons.bloodtype_outlined,
                 'Availability': Icons.event_available_outlined,
                 'Last Donation': Icons.calendar_today_outlined,
@@ -115,7 +109,6 @@ class RequesterDonorProfileScreen extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-<<<<<<< HEAD
             Container(
               width: 100,
               height: 100,
@@ -134,25 +127,11 @@ class RequesterDonorProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-=======
-            const CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                size: 80,
-                color: Color(0xFFD32F2F),
-              ), // Placeholder
->>>>>>> map-feature
             ),
             const SizedBox(height: 16),
             Text(
               donor.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Row(
@@ -160,10 +139,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on, color: Colors.white70, size: 16),
                 const SizedBox(width: 4),
-                Text(
-                  donor.location,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
+                Text(donor.location, style: const TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
             const SizedBox(height: 8),
@@ -190,27 +166,9 @@ class RequesterDonorProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-<<<<<<< HEAD
           _buildStatCard('${donor.totalDonations}', 'Donations', Icons.bloodtype),
           _buildStatCard('${donor.totalDonations * 3}', 'Lives Saved', Icons.favorite),
           _buildStatCard('${donor.lastDonationMonthsAgo}m', 'Last Donation', Icons.calendar_today),
-=======
-          _buildStatCard(
-            '${donor.totalDonations}',
-            'Donations Made',
-            Icons.bloodtype,
-          ),
-          _buildStatCard(
-            '${donor.totalDonations * 3}',
-            'Lives Saved',
-            Icons.favorite,
-          ),
-          _buildStatCard(
-            '${donor.lastDonationMonthsAgo}m',
-            'Last Donation',
-            Icons.calendar_today,
-          ),
->>>>>>> map-feature
         ],
       ),
     );
@@ -228,14 +186,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
           child: Icon(icon, color: const Color(0xFFD32F2F), size: 28),
         ),
         const SizedBox(height: 8),
-<<<<<<< HEAD
         Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-=======
-        Text(
-          value,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-        ),
->>>>>>> map-feature
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
@@ -246,10 +197,7 @@ class RequesterDonorProfileScreen extends StatelessWidget {
     required String title,
     required Map<String, String> details,
     required Map<String, IconData> icons,
-<<<<<<< HEAD
     Map<String, VoidCallback>? actions,
-=======
->>>>>>> map-feature
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -261,12 +209,8 @@ class RequesterDonorProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
-<<<<<<< HEAD
             ...details.entries.map((entry) {
               final hasAction = actions != null && actions.containsKey(entry.key);
               return Padding(
@@ -304,38 +248,12 @@ class RequesterDonorProfileScreen extends StatelessWidget {
                   ),
                 );
             }),
-=======
-            ...details.entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(icons[entry.key], color: Colors.grey, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${entry.key}: ',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    Flexible(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(color: Color(0xFF666666)),
-                        softWrap: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
->>>>>>> map-feature
           ],
         ),
       ),
     );
   }
 
-<<<<<<< HEAD
   Widget _buildActionButtons(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -356,89 +274,6 @@ class RequesterDonorProfileScreen extends StatelessWidget {
             disabledBackgroundColor: Colors.grey.shade300,
           ),
         ),
-=======
-  Widget _buildDonationHistory() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 3,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recent Donations',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            _buildHistoryItem('Jan 12, 2024', 'Kathmandu Medical College'),
-            _buildHistoryItem('Oct 05, 2023', 'Grande Hospital'),
-            _buildHistoryItem('May 21, 2023', 'Bir Hospital'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryItem(String date, String hospital) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
-          const SizedBox(width: 12),
-          Expanded(child: Text('$date - $hospital')),
-          const Text(
-            'Completed',
-            style: TextStyle(color: Colors.green, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFD32F2F),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                side: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),
-              ),
-              child: const Text('Edit Profile'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: donor.isAvailable
-                    ? const Color(0xFFD32F2F)
-                    : const Color(0xFF4CAF50),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                donor.isAvailable ? 'Become Unavailable' : 'Become Available',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
->>>>>>> map-feature
       ),
     );
   }

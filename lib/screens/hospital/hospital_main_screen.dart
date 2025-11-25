@@ -1,6 +1,3 @@
-// lib/screens/hospital/hospital_main_screen.dart
-
-import 'package:firebase_auth/firebase_auth.dart'; // FIX 1: Import Firebase Auth to recognize the User type.
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/hospital/hospital_alerts_page.dart';
 import 'package:jeevandhara/screens/hospital/hospital_home_page.dart';
@@ -8,11 +5,7 @@ import 'package:jeevandhara/screens/hospital/hospital_profile_page.dart';
 // HospitalRequestsPage import removed
 
 class HospitalMainScreen extends StatefulWidget {
-  // FIX 2: Add a field to accept the logged-in user.
-  final User user;
-
-  // FIX 3: Update the constructor to require the user.
-  const HospitalMainScreen({super.key, required this.user});
+  const HospitalMainScreen({super.key});
 
   @override
   State<HospitalMainScreen> createState() => _HospitalMainScreenState();
@@ -21,30 +14,12 @@ class HospitalMainScreen extends StatefulWidget {
 class _HospitalMainScreenState extends State<HospitalMainScreen> {
   int _selectedIndex = 0;
 
-<<<<<<< HEAD
   static const List<Widget> _widgetOptions = <Widget>[
     HospitalHomePage(),
     // HospitalRequestsPage removed
     HospitalAlertsPage(),
     HospitalProfilePage(),
   ];
-=======
-  // FIX 4: The list is no longer static or const because it depends on the user object.
-  late final List<Widget> _widgetOptions;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the list of screens here, using the 'user' from the parent widget.
-    _widgetOptions = <Widget>[
-      // FIX 5: Pass the user object to the HospitalHomePage.
-      HospitalHomePage(user: widget.user),
-      const HospitalRequestsPage(),
-      const HospitalAlertsPage(),
-      const HospitalProfilePage(),
-    ];
-  }
->>>>>>> map-feature
 
   void _onItemTapped(int index) {
     setState(() {
@@ -54,51 +29,26 @@ class _HospitalMainScreenState extends State<HospitalMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // The rest of your build method is perfectly fine and needs no changes.
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-<<<<<<< HEAD
               // Requests item removed
               BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: 'Alerts'),
               BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-=======
-              BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt_outlined),
-                label: 'Requests',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_none),
-                label: 'Alerts',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: 'Profile',
-              ),
->>>>>>> map-feature
             ],
             currentIndex: _selectedIndex,
             selectedItemColor: const Color(0xFFD32F2F),

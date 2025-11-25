@@ -1,17 +1,4 @@
-// lib/screens/hospital/hospital_find_donors_page.dart
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-// FIX: Import the correct model for this page's purpose.
-import '../../models/donor_model.dart';
-// FIX: We no longer need BloodRequestModel or LocationModel here.
-// import '../../models/blood_request_model.dart';
-// import '../../models/location_model.dart';
-import '../../viewmodels/donor_viewmodel.dart';
-// We don't need InventoryViewModel for this simplified logic.
-// import '../../viewmodels/inventory_viewmodel.dart';
-import '../../widgets/empty_state_widget.dart'; // A reusable empty state widget is cleaner
 
 class HospitalFindDonorsPage extends StatefulWidget {
   const HospitalFindDonorsPage({super.key});
@@ -21,35 +8,7 @@ class HospitalFindDonorsPage extends StatefulWidget {
 }
 
 class _HospitalFindDonorsPageState extends State<HospitalFindDonorsPage> {
-  String _selectedBloodGroup = 'All';
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Use a listener for instant search feedback
-    _searchController.addListener(() {
-      if (mounted) {
-        setState(() => _searchQuery = _searchController.text);
-      }
-    });
-    // Load the initial data when the widget is first built
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  // FIX: This method now correctly loads DONORS.
-  Future<void> _loadData() async {
-    // The complex logic with InventoryViewModel is removed for simplification.
-    // We assume the view model can get the user's location itself if needed.
-    await context.read<DonorViewModel>().loadNearbyDonors();
-  }
+  String _selectedFilter = 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -59,19 +18,15 @@ class _HospitalFindDonorsPageState extends State<HospitalFindDonorsPage> {
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         title: const Text('Find Donors Nearby'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchBar(),
           _buildFilterChips(),
-          Expanded(child: _buildDonorsList()),
+          _buildResultsSummary(),
+          Expanded(
+            child: _buildDonorsList(),
+          ),
         ],
       ),
     );
@@ -82,26 +37,22 @@ class _HospitalFindDonorsPageState extends State<HospitalFindDonorsPage> {
       padding: const EdgeInsets.all(16),
       color: Colors.white,
       child: TextField(
-        controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name or location...',
+          hintText: 'Search by name...',
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           filled: true,
           fillColor: const Color(0xFFF9F9F9),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
         ),
       ),
     );
   }
 
   Widget _buildFilterChips() {
-    final filters = ['All', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+    final filters = ['All', 'A+', 'B+', 'O+', 'AB+', 'Available'];
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: SizedBox(
         height: 35,
         child: ListView.separated(
@@ -110,26 +61,15 @@ class _HospitalFindDonorsPageState extends State<HospitalFindDonorsPage> {
           itemCount: filters.length,
           itemBuilder: (context, index) {
             final filter = filters[index];
-            final isSelected = _selectedBloodGroup == filter;
+            final isSelected = _selectedFilter == filter;
             return ChoiceChip(
               label: Text(filter),
               selected: isSelected,
-              onSelected: (selected) {
-                // FIX: Perform efficient client-side filtering. No need to call _loadData().
-                setState(() {
-                  _selectedBloodGroup = selected ? filter : 'All';
-                });
-              },
-              selectedColor: const Color(0xFFD32F2F),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontSize: 12,
-              ),
+              onSelected: (selected) => setState(() => _selectedFilter = selected ? filter : 'All'),
+              selectedColor: filter == 'Available' ? Colors.green : const Color(0xFFD32F2F),
+              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12),
               backgroundColor: Colors.grey.shade200,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide.none,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
             );
           },
           separatorBuilder: (context, index) => const SizedBox(width: 8),
@@ -138,135 +78,92 @@ class _HospitalFindDonorsPageState extends State<HospitalFindDonorsPage> {
     );
   }
 
-  // FIX: This method now filters a list of DonorModel.
-  List<DonorModel> _getFilteredDonors(List<DonorModel> allDonors) {
-    return allDonors.where((donor) {
-      // Blood group filter logic
-      final bloodGroupMatch = _selectedBloodGroup == 'All' ||
-          donor.bloodGroup == _selectedBloodGroup;
-
-      // Search query filter logic
-      final searchMatch = _searchQuery.isEmpty ||
-          donor.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (donor.locationName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-
-      return bloodGroupMatch && searchMatch;
-    }).toList();
+  Widget _buildResultsSummary() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Text('Showing 8 donors within 5 km radius', style: TextStyle(color: Colors.grey, fontSize: 12)),
+    );
   }
 
-  // FIX: This widget now builds a list of DONORS.
   Widget _buildDonorsList() {
-    final donorViewModel = context.watch<DonorViewModel>();
-    // FIX: Get the correct list of donors from the view model.
-    final filteredDonors = _getFilteredDonors(donorViewModel.nearbyDonors);
-
-    if (donorViewModel.isLoading && donorViewModel.nearbyDonors.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (filteredDonors.isEmpty) {
-      return const EmptyStateWidget( // A reusable empty state widget is cleaner
-        icon: Icons.search_off,
-        message: 'No available donors match your criteria.',
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: filteredDonors.length,
-        itemBuilder: (context, index) {
-          // FIX: Build a new card designed for donor info.
-          return _buildDonorCard(filteredDonors[index]);
-        },
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                _buildSectionHeader('Available Donors', Icons.check_circle, Colors.green),
+                _buildDonorCard('Rajesh Kumar', '1.2 km away', 12, 3, true),
+                _buildDonorCard('Anjali Gurung', '2.5 km away', 1, 2, true),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              children: [
+                _buildSectionHeader('Not Available', Icons.cancel, Colors.grey),
+                _buildDonorCard('Sunita Sharma', '4.1 km away', 2, 1, false),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // FIX: A completely new card widget to display Donor information.
-  Widget _buildDonorCard(DonorModel donor) {
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonorCard(String name, String distance, int donations, int lastDonationMonths, bool isAvailable) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        // Highlight available donors
-        side: BorderSide(
-          color: donor.isAvailable ? Colors.green : Colors.grey.shade300,
-          width: 1.5,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            // Blood group circle
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFD32F2F).withOpacity(0.1),
-              ),
-              child: Center(
-                child: Text(
-                  donor.bloodGroup,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD32F2F),
+      elevation: 1,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Opacity(
+        opacity: isAvailable ? 1.0 : 0.6,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              const SizedBox(height: 6),
+              Row(children: [const Icon(Icons.location_on_outlined, size: 12, color: Colors.grey), const SizedBox(width: 4), Text(distance, style: const TextStyle(fontSize: 11, color: Colors.grey))]),
+              const SizedBox(height: 6),
+              Row(children: [const Icon(Icons.military_tech_outlined, size: 12, color: Colors.grey), const SizedBox(width: 4), Text('$donations donations', style: const TextStyle(fontSize: 11, color: Colors.grey))]),
+              const SizedBox(height: 4),
+              Row(children: [const Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey), const SizedBox(width: 4), Text('Last: $lastDonationMonths months ago', style: const TextStyle(fontSize: 11, color: Colors.grey))]),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isAvailable ? () {} : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isAvailable ? const Color(0xFF4CAF50) : Colors.grey,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)
                   ),
+                  child: Text(isAvailable ? 'Request Now' : 'Unavailable'),
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Donor details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    donor.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        // Display location name or distance if available
-                        donor.locationName ?? (donor.distanceKm != null ? '~${donor.distanceKm!.toStringAsFixed(1)} km away' : 'Location unknown'),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  if (donor.isAvailable)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'AVAILABLE FOR DONATION',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // You can add an action button or navigation arrow here
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          ],
+              )
+            ],
+          ),
         ),
       ),
     );
