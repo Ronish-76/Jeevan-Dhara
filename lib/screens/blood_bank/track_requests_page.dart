@@ -22,20 +22,23 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _fetchData();
+    _refreshData();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _refreshData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       // Fetch Distributions (Completed)
       final distData = await ApiService().getDistributions(user.id!);
       
       // Fetch Blood Bank Requests (All/Pending)
-      // Fetching requests specifically assigned to blood bank or open hospital requests
       final reqData = await ApiService().getBloodBankRequests(user.id!);
       
       if (mounted) {
@@ -88,37 +91,24 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
           ],
         ),
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
-          : Column(
-        children: [
-          _buildStatsOverview(allCount, pendingCount, completedCount),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildCombinedList(), // All
-                _buildRequestsList(), // Pending (Hospital Requests)
-                _buildDistributionsList(), // Completed (Distributions)
-              ],
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
+            : Column(
+          children: [
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildCombinedList(), // All
+                  _buildRequestsList(), // Pending (Hospital Requests)
+                  _buildDistributionsList(), // Completed (Distributions)
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsOverview(int total, int active, int completed) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _StatItem(value: total.toString(), label: 'Total Requests', color: const Color(0xFF2196F3)),
-          _StatItem(value: active.toString(), label: 'Active', color: const Color(0xFFFF9800)),
-          _StatItem(value: completed.toString(), label: 'Completed', color: const Color(0xFF4CAF50)),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -126,7 +116,7 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
   Widget _buildCombinedList() {
     final combined = [..._hospitalRequests, ..._distributions];
     
-    if (combined.isEmpty) return const Center(child: Text('No records found'));
+    if (combined.isEmpty) return _buildEmptyState();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -145,7 +135,7 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
   Widget _buildRequestsList() {
     final pending = _hospitalRequests.where((r) => r['status'] != 'fulfilled' && r['status'] != 'cancelled').toList();
     
-    if (pending.isEmpty) return const Center(child: Text('No pending requests'));
+    if (pending.isEmpty) return _buildEmptyState('No pending requests');
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -155,12 +145,24 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
   }
 
   Widget _buildDistributionsList() {
-    if (_distributions.isEmpty) return const Center(child: Text('No completed distributions'));
+    if (_distributions.isEmpty) return _buildEmptyState('No completed distributions');
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _distributions.length,
       itemBuilder: (context, index) => _buildDistributionCard(_distributions[index]),
+    );
+  }
+
+  Widget _buildEmptyState([String message = 'No records found']) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 400,
+          child: Center(child: Text(message)),
+        )
+      ],
     );
   }
 
@@ -228,9 +230,10 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
                             prefilledHospitalName: hospitalName,
                             prefilledBloodGroup: blood,
                             prefilledUnits: units,
+                            requestId: request['_id'],
                           ),
                         ),
-                      ).then((_) => _fetchData()); // Refresh data when coming back
+                      ).then((_) => _refreshData()); 
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: statusColor,
@@ -297,23 +300,6 @@ class _TrackRequestsPageState extends State<TrackRequestsPage> with SingleTicker
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String value, label;
-  final Color color;
-  const _StatItem({required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      ],
     );
   }
 }

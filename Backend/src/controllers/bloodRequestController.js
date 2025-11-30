@@ -1,5 +1,56 @@
 const BloodRequest = require('../models/BloodRequest');
 const Requester = require('../models/Requester');
+const Donor = require('../models/Donor');
+
+// Helper function to send notifications
+const sendNotification = async (tokens, title, body, data) => {
+    console.log("DEBUG: sendNotification called. Token count:", tokens ? tokens.length : 0);
+    if (!tokens || tokens.length === 0) return;
+
+    const message = {
+        notification: { title, body },
+        data: data || {},
+        tokens: tokens,
+        android: {
+            priority: 'high', // Wakes up the device immediately
+            notification: {
+                channelId: 'high_importance_channel', // Matches the ID in AndroidManifest.xml
+                priority: 'high',
+                defaultSound: true,
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    contentAvailable: true, // Important for background updates
+                }
+            }
+        }
+    };
+
+    try {
+        // Ensure tokens is an array and remove nulls/undefined
+        const cleanTokens = tokens.filter(t => t);
+        if (cleanTokens.length > 0) {
+            // Use the global firebaseAdmin instance
+            if (global.firebaseAdmin) {
+                console.log("DEBUG: Sending multicast message to Firebase...");
+                const response = await global.firebaseAdmin.messaging().sendMulticast({ ...message, tokens: cleanTokens });
+                console.log('DEBUG: Notifications sent:', response.successCount, 'failed:', response.failureCount);
+                if (response.failureCount > 0) {
+                    console.log("DEBUG: Failures:", JSON.stringify(response.responses));
+                }
+            } else {
+                console.error("DEBUG: Firebase Admin not initialized");
+            }
+        } else {
+            console.log("DEBUG: No valid tokens to send to.");
+        }
+    } catch (error) {
+        console.error('DEBUG: Error sending notification:', error);
+    }
+};
 
 const createBloodRequest = async (req, res) => {
     try {
@@ -15,6 +66,8 @@ const createBloodRequest = async (req, res) => {
             notifyViaEmergency,
             requesterId
         } = req.body;
+        
+        console.log("DEBUG: createBloodRequest called. Data:", req.body);
 
         const existingRequest = await BloodRequest.findOne({
             requester: requesterId,
@@ -41,6 +94,32 @@ const createBloodRequest = async (req, res) => {
 
         await bloodRequest.save();
 
+        // --- NOTIFICATION LOGIC START ---
+        
+        // TEST MODE: Notify ALL donors regardless of blood group
+        console.log("DEBUG: TEST MODE ACTIVE - Fetching ALL donors with tokens...");
+        
+        const donors = await Donor.find({
+            fcmToken: { $ne: null }, // Only those with tokens
+        });
+        
+        console.log(`DEBUG: Found ${donors.length} potential donors (TEST MODE).`);
+
+        const tokens = donors.map(d => d.fcmToken);
+        
+        if (tokens.length > 0) {
+            await sendNotification(
+                tokens,
+                'Urgent Blood Request (TEST)',
+                `${units} unit(s) of ${bloodGroup} blood needed at ${hospitalName}. Click to view details.`,
+                { 
+                    type: 'blood_request',
+                    requestId: bloodRequest._id.toString() 
+                }
+            );
+        }
+        // --- NOTIFICATION LOGIC END ---
+
         res.status(201).json({
             message: 'Blood request created successfully',
             request: bloodRequest
@@ -57,7 +136,6 @@ const getAllBloodRequests = async (req, res) => {
         let filter = { status: { $in: ['pending', 'accepted'] } };
 
         if (userType === 'donor') {
-            const Donor = require('../models/Donor');
             const donor = await Donor.findById(userId);
 
             if (!donor) {
@@ -192,7 +270,6 @@ const acceptBloodRequest = async (req, res) => {
             return res.status(400).json({ message: 'Request is no longer pending' });
         }
 
-        const Donor = require('../models/Donor');
         const donor = await Donor.findById(donorId);
         if (!donor) {
             return res.status(404).json({ message: 'Donor not found' });
@@ -216,6 +293,27 @@ const acceptBloodRequest = async (req, res) => {
         request.status = 'accepted';
         request.donor = donorId;
         await request.save();
+
+        // --- NOTIFICATION LOGIC START ---
+        // Notify the Requester that a donor has accepted
+        try {
+            const requester = await Requester.findById(request.requester);
+            if (requester && requester.fcmToken) {
+                await sendNotification(
+                    [requester.fcmToken],
+                    'Donor Found!',
+                    `${donor.fullName} has accepted your request for ${request.bloodGroup} blood. They will contact you soon.`,
+                    {
+                        type: 'request_accepted',
+                        requestId: request._id.toString(),
+                        donorId: donor._id.toString()
+                    }
+                );
+            }
+        } catch (notifError) {
+            console.error("Failed to notify requester:", notifError);
+        }
+        // --- NOTIFICATION LOGIC END ---
 
         res.json({ message: 'Blood request accepted successfully', request });
     } catch (error) {
@@ -243,12 +341,29 @@ const fulfillBloodRequest = async (req, res) => {
         request.status = 'fulfilled';
         await request.save();
 
-        const Donor = require('../models/Donor');
         // Increment donation count and update date
         await Donor.findByIdAndUpdate(donorId, { 
             lastDonationDate: new Date(),
             $inc: { totalDonations: 1 } 
         });
+
+        // --- NOTIFICATION LOGIC START ---
+        // Notify Donor "Thank You"
+        try {
+             const donor = await Donor.findById(donorId);
+             if (donor && donor.fcmToken) {
+                 await sendNotification(
+                     [donor.fcmToken],
+                     'Donation Completed',
+                     'Thank you for saving a life! Your donation has been recorded.',
+                     {
+                         type: 'request_fulfilled',
+                         requestId: request._id.toString()
+                     }
+                 );
+             }
+        } catch (e) { console.log(e); }
+        // --- NOTIFICATION LOGIC END ---
 
         res.json({ message: 'Blood request fulfilled successfully', request });
     } catch (error) {

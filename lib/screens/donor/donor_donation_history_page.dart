@@ -4,6 +4,7 @@ import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/models/blood_request_model.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class DonorDonationHistoryPage extends StatefulWidget {
   const DonorDonationHistoryPage({super.key});
@@ -21,11 +22,19 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
   @override
   void initState() {
     super.initState();
+    _refreshHistory();
+  }
+
+  Future<void> _refreshHistory() async {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null) {
-      _historyFuture = _fetchHistory(user.id!);
+      setState(() {
+        _historyFuture = _fetchHistory(user.id!);
+      });
     } else {
-      _historyFuture = Future.error('User not logged in');
+      setState(() {
+        _historyFuture = Future.error(translate('user_not_logged_in'));
+      });
     }
   }
 
@@ -62,40 +71,59 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Text('My Donation History'),
+        title: Text(translate('my_donation_history')),
       ),
-      body: FutureBuilder<List<BloodRequest>>(
-        future: _historyFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          
-          final history = snapshot.data ?? [];
-          
-          return Column(
-            children: [
-              _buildStatisticsHeader(),
-              _buildAchievementBanner(),
-              _buildYearFilter(),
-              Expanded(
-                child: history.isEmpty 
-                    ? const Center(child: Text("No donation history found yet."))
-                    : _buildDonationList(history),
-              ),
-            ],
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: _refreshHistory,
+        child: FutureBuilder<List<BloodRequest>>(
+          future: _historyFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 100,
+                    child: Center(child: Text('Error: ${snapshot.error}')),
+                  )
+                ],
+              );
+            }
+            
+            final history = snapshot.data ?? [];
+            
+            return Column(
+              children: [
+                _buildStatisticsHeader(),
+                _buildAchievementBanner(),
+                _buildYearFilter(),
+                Expanded(
+                  child: history.isEmpty 
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: 400,
+                              child: Center(child: Text(translate('no_donation_history'))),
+                            )
+                          ],
+                        )
+                      : _buildDonationList(history),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildStatisticsHeader() {
     final user = Provider.of<AuthProvider>(context).user;
-    String nextEligible = "Now";
+    String nextEligible = translate('now');
     if (user?.lastDonationDate != null) {
       final nextDate = user!.lastDonationDate!.add(const Duration(days: 90));
       if (nextDate.isAfter(DateTime.now())) {
@@ -109,9 +137,9 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(value: '$_totalDonations', label: 'Donations', icon: Icons.bloodtype_outlined),
-          _StatItem(value: '$_totalUnits', label: 'Units', icon: Icons.favorite_border),
-          _StatItem(value: nextEligible, label: 'Next Eligible', icon: Icons.calendar_today_outlined, isDate: true),
+          _StatItem(value: '$_totalDonations', label: translate('donations'), icon: Icons.bloodtype_outlined),
+          _StatItem(value: '$_totalUnits', label: translate('units'), icon: Icons.favorite_border),
+          _StatItem(value: nextEligible, label: translate('next_eligible'), icon: Icons.calendar_today_outlined, isDate: true),
         ],
       ),
     );
@@ -136,9 +164,9 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Lifesaver Hero', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFD32F2F))),
+                Text(translate('lifesaver_hero'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFD32F2F))),
                 const SizedBox(height: 4),
-                Text('You\'ve saved $livesSaved+ lives!', style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                Text(translate('lives_saved_msg', args: {'count': livesSaved}), style: const TextStyle(color: Colors.black87, fontSize: 12)),
               ],
             ),
           ),
@@ -149,7 +177,7 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
 
   Widget _buildYearFilter() {
     final currentYear = DateTime.now().year;
-    final years = ['All', '$currentYear', '${currentYear - 1}', '${currentYear - 2}'];
+    final years = [translate('all'), '$currentYear', '${currentYear - 1}', '${currentYear - 2}'];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: SizedBox(
@@ -160,12 +188,12 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
           itemCount: years.length,
           itemBuilder: (context, index) {
             final year = years[index];
-            final isSelected = _selectedYear == year;
+            final isSelected = _selectedYear == year || (_selectedYear == 'All' && year == translate('all'));
             return ChoiceChip(
               label: Text(year),
               selected: isSelected,
               onSelected: (selected) {
-                if (selected) setState(() => _selectedYear = year);
+                if (selected) setState(() => _selectedYear = year == translate('all') ? 'All' : year);
               },
               selectedColor: const Color(0xFFD32F2F),
               labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
@@ -186,10 +214,19 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
         : history.where((req) => req.createdAt.year.toString() == _selectedYear).toList();
 
     if (filteredHistory.isEmpty) {
-       return const Center(child: Text("No donations in this period."));
+       return ListView(
+         physics: const AlwaysScrollableScrollPhysics(),
+         children: [
+           SizedBox(
+             height: 300,
+             child: Center(child: Text(translate('no_donations_period'))),
+           )
+         ]
+       );
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: filteredHistory.length,
       itemBuilder: (context, index) {
@@ -255,7 +292,7 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
                   Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: const Color(0xFF4CAF50), borderRadius: BorderRadius.circular(12)),
-                      child: const Text('Completed', style: TextStyle(color: Colors.white, fontSize: 10))),
+                      child: Text(translate('completed'), style: const TextStyle(color: Colors.white, fontSize: 10))),
                 ],
               ),
             ),
@@ -263,7 +300,7 @@ class _DonorDonationHistoryPageState extends State<DonorDonationHistoryPage> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('${request.units} Unit${request.units > 1 ? 's' : ''}'),
+                Text('${request.units} ${request.units > 1 ? translate('units') : translate('unit')}'),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

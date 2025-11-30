@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/screens/auth/login_screen.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class DonorRegistrationScreen extends StatefulWidget {
   const DonorRegistrationScreen({super.key});
@@ -19,15 +22,20 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
   // Form Keys
   final _step1FormKey = GlobalKey<FormState>();
   final _step2FormKey = GlobalKey<FormState>();
+  final _step3FormKey = GlobalKey<FormState>();
 
   // Step 1 Controllers & Variables
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController(text: '+977');
   final _locationController = TextEditingController();
   final _ageController = TextEditingController();
   String? _bloodGroup;
+  
+  // Location variables
+  double? _latitude;
+  double? _longitude;
+  bool _isLoadingLocation = false;
 
   // Step 2 Controllers & Variables
   final _healthProblemsController = TextEditingController();
@@ -36,6 +44,23 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
   bool _isAvailable = false;
   String? _donationCapability;
 
+  // Step 3 Controllers & Variables
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
+
+  final List<String> _districts = [
+    "Achham", "Arghakhanchi", "Baglung", "Baitadi", "Bajhang", "Bajura", "Banke", "Bara", "Bardiya", "Bhaktapur",
+    "Bhojpur", "Chitwan", "Dadeldhura", "Dailekh", "Dang", "Darchula", "Dhading", "Dhankuta", "Dhanusa", "Dolakha",
+    "Dolpa", "Doti", "Eastern Rukum", "Gorkha", "Gulmi", "Humla", "Ilam", "Jajarkot", "Jhapa", "Jumla",
+    "Kailali", "Kalikot", "Kanchanpur", "Kapilvastu", "Kaski", "Kathmandu", "Kavrepalanchok", "Khotang", "Lalitpur",
+    "Lamjung", "Mahottari", "Makwanpur", "Manang", "Morang", "Mugu", "Mustang", "Myagdi", "Nawalpur", "Nuwakot",
+    "Okhaldhunga", "Palpa", "Panchthar", "Parasi", "Parbat", "Parsa", "Pyuthan", "Ramechhap", "Rasuwa", "Rautahat",
+    "Rolpa", "Rupandehi", "Salyan", "Sankhuwasabha", "Saptari", "Sarlahi", "Sindhuli", "Sindhupalchok", "Siraha",
+    "Solukhumbu", "Sunsari", "Surkhet", "Syangja", "Tanahun", "Taplejung", "Terhathum", "Udayapur", "Western Rukum"
+  ];
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -43,18 +68,98 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _locationController.dispose();
     _ageController.dispose();
     _healthProblemsController.dispose();
     super.dispose();
   }
 
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(translate('location_services_disabled'))));
+      setState(() => _isLoadingLocation = false);
+      return;
+    }
+
+    // Check permissions
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(translate('location_permission_denied'))));
+        setState(() => _isLoadingLocation = false);
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(translate('location_permission_denied'))));
+      setState(() => _isLoadingLocation = false);
+      return;
+    }
+
+    // Get position
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+      _isLoadingLocation = false;
+    });
+    
+    print("Location fetched: $_latitude, $_longitude"); 
+  }
+
   void _nextPage() {
-    if (_step1FormKey.currentState!.validate()) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    if (_currentPage == 0) {
+      if (_step1FormKey.currentState!.validate()) {
+        // Validation to ensure location coordinates are captured
+        if (_latitude == null || _longitude == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(translate('location_coords_required')),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else if (_currentPage == 1) {
+       if (_step2FormKey.currentState!.validate()) {
+          if (_donationCapability == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(translate('donation_capability_required')),
+              ),
+            );
+            return;
+          }
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+       }
     }
   }
 
@@ -69,15 +174,23 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
+      // Default "No" for health problems if empty
+      String healthProblems = _healthProblemsController.text.trim();
+      if (healthProblems.isEmpty) {
+        healthProblems = "No";
+      }
+
       final success = await authProvider.register({
         'fullName': _nameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
         'password': _passwordController.text,
         'location': _locationController.text,
+        'latitude': _latitude,
+        'longitude': _longitude,
         'age': int.tryParse(_ageController.text),
         'bloodGroup': _bloodGroup,
-        'healthProblems': _healthProblemsController.text,
+        'healthProblems': healthProblems,
         'lastDonationDate': _lastDonationDate?.toIso8601String(),
         'isAvailable': _isAvailable,
         'donationCapability': _donationCapability,
@@ -92,8 +205,8 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text('Registration Successful', style: TextStyle(color: Color(0xFFD32F2F))),
-              content: const Text('Your account has been created successfully. Please login to continue.'),
+              title: Text(translate('registration_successful'), style: const TextStyle(color: Color(0xFFD32F2F))),
+              content: Text(translate('account_created_msg')),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -110,7 +223,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
           },
         );
       } else {
-        _showErrorDialog(authProvider.errorMessage ?? 'Registration failed. Please try again.');
+        _showErrorDialog(authProvider.errorMessage ?? translate('registration_failed'));
       }
     } catch (e) {
       if (!mounted) return;
@@ -123,7 +236,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+          title: Text(translate('registration_failed'), style: const TextStyle(color: Colors.red)),
           content: Text(message),
           actions: [
             TextButton(
@@ -137,15 +250,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
   }
 
   void _completeRegistration() {
-    if (_step2FormKey.currentState!.validate()) {
-      if (_donationCapability == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please specify if you are medically fit to donate.'),
-          ),
-        );
-        return;
-      }
+    if (_step3FormKey.currentState!.validate()) {
       _registerUser();
     }
   }
@@ -167,14 +272,23 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
         } else {
           _isAvailable = false;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Donors must wait 3 months between donations. Availability set to No.',
+                translate('must_wait_3_months'),
               ),
             ),
           );
         }
       });
+    }
+  }
+
+  void _changeLanguage(BuildContext context) {
+    final currentLocale = LocalizedApp.of(context).delegate.currentLocale;
+    if (currentLocale.languageCode == 'en') {
+      changeLocale(context, 'ne');
+    } else {
+      changeLocale(context, 'en');
     }
   }
 
@@ -186,11 +300,15 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
     String? Function(String?)? validator,
     bool obscureText = false,
     Widget? suffixIcon,
+    List<TextInputFormatter>? inputFormatters,
+    void Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint ?? 'Enter your $label',
@@ -207,23 +325,42 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pageTitle = _currentPage == 0
-        ? "Be the reason for someone's heartbeat"
-        : "Health & Donation Readiness";
+    var localizationDelegate = LocalizedApp.of(context).delegate;
+    final isNepali = localizationDelegate.currentLocale.languageCode == 'ne';
+
+    String pageTitle = translate('be_the_reason');
+    if (_currentPage == 1) {
+      pageTitle = translate('health_and_donation_readiness');
+    } else if (_currentPage == 2) {
+      pageTitle = translate('security');
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: Text(
-          'Donor Registration',
-          style: TextStyle(color: Colors.black, fontFamily: 'Poppins'),
+          translate('donor_registration'),
+          style: const TextStyle(color: Colors.black, fontFamily: 'Poppins'),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.black),
-        leading: _currentPage == 1
-            ? IconButton(icon: Icon(Icons.arrow_back), onPressed: _previousPage)
+        iconTheme: const IconThemeData(color: Colors.black),
+        leading: _currentPage > 0
+            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _previousPage)
             : BackButton(onPressed: () => Navigator.of(context).pop()),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _changeLanguage(context),
+            icon: const Icon(Icons.language, color: Color(0xFFD32F2F)),
+            label: Text(
+              isNepali ? 'English' : 'नेपाली',
+              style: const TextStyle(
+                color: Color(0xFFD32F2F),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -231,50 +368,50 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
           child: Column(
             children: [
               Text(
-                'Jeevan Dhara',
+                translate('app_name'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFD32F2F),
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 pageTitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   color: Color(0xFF666666),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Step ${_currentPage + 1} of 2',
-                    style: TextStyle(
+                    translate('step_of', args: {'current': _currentPage + 1, 'total': 3}),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               LinearProgressIndicator(
-                value: (_currentPage + 1) / 2,
-                backgroundColor: Color(0xFFE0E0E0),
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD32F2F)),
+                value: (_currentPage + 1) / 3,
+                backgroundColor: const Color(0xFFE0E0E0),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD32F2F)),
               ),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   onPageChanged: (page) => setState(() => _currentPage = page),
-                  physics: NeverScrollableScrollPhysics(),
-                  children: [_buildStep1(), _buildStep2()],
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [_buildStep1(), _buildStep2(), _buildStep3()],
                 ),
               ),
             ],
@@ -293,68 +430,98 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Personal & Account Details',
-              style: TextStyle(
+              translate('personal_details'),
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(
               controller: _nameController,
-              label: 'Full Name',
-              validator: (v) => v!.isEmpty ? 'Name is required' : null,
+              label: translate('full_name'),
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  // Capitalize the first letter of each word
+                  final capitalized = value.split(' ').map((word) {
+                    if (word.isNotEmpty) {
+                      return word[0].toUpperCase() + word.substring(1);
+                    }
+                    return '';
+                  }).join(' ');
+                  
+                  if (capitalized != value) {
+                    _nameController.value = _nameController.value.copyWith(
+                      text: capitalized,
+                      selection: TextSelection.collapsed(offset: capitalized.length),
+                    );
+                  }
+                }
+              },
+              validator: (v) => v!.isEmpty ? translate('name_required') : null,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(
               controller: _emailController,
-              label: 'Email Address',
+              label: translate('email'),
               keyboardType: TextInputType.emailAddress,
-              validator: (v) => v!.isEmpty || !v.contains('@')
-                  ? 'A valid email is required'
-                  : null,
+              onChanged: (value) {
+                 // Automatically appending .com if user stops typing? 
+                 // See Requester registration for logic, keeping simple here.
+              },
+              validator: (v) {
+                if (v == null || v.isEmpty) return translate('valid_email_required');
+                if (!v.contains('@')) return translate('valid_email_required');
+                return null;
+              },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(
               controller: _phoneController,
-              label: 'Phone Number',
+              label: translate('phone_number'),
               keyboardType: TextInputType.phone,
-              validator: (v) => v!.isEmpty ? 'Phone number is required' : null,
+              // Restrict length to 14 characters (+977 + 10 digits)
+              onChanged: (value) {
+                if (!value.startsWith('+977')) {
+                  // Force prefix
+                  _phoneController.value = TextEditingValue(
+                    text: '+977' + value.replaceAll('+977', ''),
+                    selection: TextSelection.collapsed(offset: value.length),
+                  );
+                }
+              },
+              validator: (v) {
+                if (v == null || v.isEmpty) return translate('phone_required');
+                if (!v.startsWith('+977')) return 'Must start with +977';
+                return null;
+              },
             ),
-            SizedBox(height: 16),
-            _buildTextFormField(
-              controller: _passwordController,
-              label: 'Password',
-              obscureText: true,
-              validator: (v) => v!.length < 8
-                  ? 'Password must be at least 8 characters'
-                  : null,
-            ),
-            SizedBox(height: 16),
+            // Password field removed from here and moved to Step 3
+            const SizedBox(height: 16),
             _buildTextFormField(
               controller: _ageController,
-              label: 'Age',
+              label: translate('age'),
               keyboardType: TextInputType.number,
               validator: (v) {
                 if (v == null || v.isEmpty) {
-                  return 'Age is required';
+                  return translate('age_required');
                 }
                 final age = int.tryParse(v);
                 if (age == null) {
-                  return 'Please enter a valid number';
+                  return translate('valid_age_required');
                 }
-                if (age < 18) {
-                  return 'You must be at least 18 years old to donate';
+                if (age < 18 || age > 75) {
+                  return 'Age must be between 18 and 75';
                 }
                 return null;
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _bloodGroup,
               decoration: InputDecoration(
-                labelText: 'Blood Group',
+                labelText: translate('blood_group'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -368,28 +535,87 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                 );
               }).toList(),
               onChanged: (newValue) => setState(() => _bloodGroup = newValue),
-              validator: (v) => v == null ? 'Blood group is required' : null,
+              validator: (v) => v == null ? translate('blood_group_required') : null,
             ),
-            SizedBox(height: 16),
-            _buildTextFormField(
-              controller: _locationController,
-              label: 'Location/Address',
-              validator: (v) => v!.isEmpty ? 'Location is required' : null,
+            const SizedBox(height: 16),
+            Autocomplete<String>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text == '') {
+                  return const Iterable<String>.empty();
+                }
+                return _districts.where((String option) {
+                  return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                });
+              },
+              onSelected: (String selection) {
+                _locationController.text = selection;
+              },
+              fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                 if (textEditingController.text != _locationController.text) {
+                    textEditingController.text = _locationController.text;
+                 }
+                 
+                 textEditingController.addListener(() {
+                   _locationController.text = textEditingController.text;
+                 });
+
+                 return TextFormField(
+                    controller: textEditingController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      labelText: translate('location_district'),
+                      hintText: translate('select_district'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+                      ),
+                    ),
+                    validator: (v) {
+                       if (v == null || v.isEmpty) return translate('location_required');
+                       if (!_districts.contains(v)) return 'Please select a valid district from the list';
+                       return null;
+                    },
+                 );
+              },
             ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _nextPage,
-              child: Text('Next: Health & Donation Readiness'),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+              icon: const Icon(Icons.my_location),
+              label: Text(_latitude == null 
+                  ? translate('get_current_location') 
+                  : translate('location_saved')),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFD32F2F),
-                padding: EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: _latitude == null ? Colors.grey[200] : Colors.green[100], // Visual feedback
+                foregroundColor: Colors.black,
+                elevation: 0,
+                side: _latitude == null ? BorderSide(color: Colors.red.shade200) : null, // Red border if not set
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
-            SizedBox(height: 16),
+            if (_latitude == null)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 4),
+                child: Text(
+                  translate('location_coords_required'),
+                  style: TextStyle(color: Colors.red[700], fontSize: 12),
+                ),
+              ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _nextPage,
+              child: Text('${translate("next")}: ${translate("health_information")}'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Already have an account?'),
+                child: Text(translate('already_have_account')),
               ),
             ),
           ],
@@ -407,32 +633,32 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Health Information',
-              style: TextStyle(
+              translate('health_information'),
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextFormField(
               controller: _healthProblemsController,
-              label: 'Health Problems (Optional)',
-              hint: 'List any medical conditions',
+              label: translate('health_problems'),
+              hint: translate('health_problems_hint'),
               keyboardType: TextInputType.multiline,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _hasDonatedBefore,
               decoration: InputDecoration(
-                labelText: 'Have you donated blood before?',
+                labelText: translate('have_donated_before'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items: ['Yes', 'No'].map((String value) {
+              items: [translate('yes'), translate('no')].map((String value) {
                 return DropdownMenuItem<String>(
-                  value: value,
+                  value: value == translate('yes') ? 'Yes' : 'No',
                   child: Text(value),
                 );
               }).toList(),
@@ -447,24 +673,24 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                   }
                 });
               },
-              validator: (v) => v == null ? 'This field is required' : null,
+              validator: (v) => v == null ? translate('field_required') : null,
             ),
             if (_hasDonatedBefore == 'Yes') ...[
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ListTile(
                 title: Text(
                   _lastDonationDate == null
-                      ? 'Last Donation Date'
-                      : 'Last Donated: ${_lastDonationDate!.toLocal().toString().split(' ')[0]}',
+                      ? translate('last_donation_date')
+                      : '${translate("last_donation_date")}: ${_lastDonationDate!.toLocal().toString().split(' ')[0]}',
                 ),
-                trailing: Icon(Icons.calendar_today),
+                trailing: const Icon(Icons.calendar_today),
                 onTap: () => _selectLastDonationDate(context),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               SwitchListTile(
                 title: Text(
-                  'Available for Donation',
-                  style: TextStyle(
+                  translate('available_for_donation'),
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w500,
                   ),
@@ -474,9 +700,9 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                   if (value == true) {
                     if (_lastDonationDate == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text(
-                            'Please select a last donation date first.',
+                            translate('field_required'),
                           ),
                         ),
                       );
@@ -486,9 +712,9 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                       DateTime.now().subtract(const Duration(days: 90)),
                     )) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text(
-                            'You cannot be available for donation as your last donation was within 3 months.',
+                            translate('must_wait_3_months'),
                           ),
                         ),
                       );
@@ -499,34 +725,34 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                     _isAvailable = value;
                   });
                 },
-                activeColor: Color(0xFFD32F2F),
+                activeColor: const Color(0xFFD32F2F),
               ),
             ],
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
-              'Donation Eligibility',
-              style: TextStyle(
+              translate('donation_eligibility'),
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Are you medically fit to donate blood?',
-              style: TextStyle(fontFamily: 'Inter'),
+              translate('medically_fit') + '?',
+              style: const TextStyle(fontFamily: 'Inter'),
             ),
             Column(
               children: [
                 RadioListTile<String>(
-                  title: const Text('Yes - I am medically fit to donate'),
+                  title: Text(translate('medically_fit')),
                   value: 'Yes',
                   groupValue: _donationCapability,
                   onChanged: (value) =>
                       setState(() => _donationCapability = value),
                 ),
                 RadioListTile<String>(
-                  title: const Text('No - I am not currently fit to donate'),
+                  title: Text(translate('not_medically_fit')),
                   value: 'No',
                   groupValue: _donationCapability,
                   onChanged: (value) =>
@@ -534,20 +760,86 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _completeRegistration,
-              child: Text('Register'),
+              onPressed: _nextPage,
+              child: Text('${translate("next")}: ${translate("security")}'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFD32F2F),
-                padding: EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
-            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep3() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 24),
+      child: Form(
+        key: _step3FormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              translate('security'),
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _passwordController,
+              label: translate('create_password'),
+              obscureText: !_passwordVisible,
+              validator: (v) => v!.length < 8
+                  ? translate('password_length_error')
+                  : null,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () =>
+                    setState(() => _passwordVisible = !_passwordVisible),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildTextFormField(
+              controller: _confirmPasswordController,
+              label: translate('confirm_password'),
+              obscureText: !_confirmPasswordVisible,
+              validator: (v) => v != _passwordController.text
+                  ? translate('passwords_do_not_match')
+                  : null,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _confirmPasswordVisible
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+                onPressed: () => setState(
+                  () => _confirmPasswordVisible = !_confirmPasswordVisible,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _completeRegistration,
+              child: Text(translate('complete_registration')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+             const SizedBox(height: 16),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Already have an account? Login'),
+                child: Text(translate('already_have_account')),
               ),
             ),
           ],

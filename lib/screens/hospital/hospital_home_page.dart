@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/hospital/hospital_emergency_request_page.dart';
 import 'package:jeevandhara/screens/hospital/hospital_post_blood_request_page.dart';
 import 'package:jeevandhara/screens/hospital/hospital_requests_page.dart';
+import 'package:jeevandhara/screens/hospital/hospital_receive_donations_page.dart';
+import 'package:jeevandhara/screens/hospital/hospital_donations_page.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
@@ -29,7 +31,10 @@ class _HospitalHomePageState extends State<HospitalHomePage> {
     setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       // Fetch Stock
       final stockData = await ApiService().getHospitalStock(user.id!);
@@ -61,21 +66,23 @@ class _HospitalHomePageState extends State<HospitalHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildHospitalHeader(),
-                  const SizedBox(height: 24),
-                  _buildQuickActionsList(context),
-                  const SizedBox(height: 12),
-                  _buildCriticalStockAlert(),
-                  const SizedBox(height: 24),
-                  _buildRecentRequests(),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _fetchHospitalData,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildHospitalHeader(),
+                    const SizedBox(height: 24),
+                    _buildQuickActionsList(context),
+                    const SizedBox(height: 24),
+                    _buildRecentRequests(),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -141,6 +148,27 @@ class _HospitalHomePageState extends State<HospitalHomePage> {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const HospitalEmergencyRequestPage()));
             }
           ),
+          const SizedBox(height: 16),
+          _buildActionCard(
+            context, 
+            'Receive Donations', 
+            'Register new blood donation', 
+            Icons.volunteer_activism, 
+            onTap: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (context) => const HospitalReceiveDonationsPage()));
+              _fetchHospitalData();
+            }
+          ),
+          const SizedBox(height: 16),
+          _buildActionCard(
+            context, 
+            'Donation History', 
+            'View received donations log', 
+            Icons.history, 
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const HospitalDonationsPage()));
+            }
+          ),
         ],
       ),
     );
@@ -186,31 +214,6 @@ class _HospitalHomePageState extends State<HospitalHomePage> {
             Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 20),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCriticalStockAlert() {
-    int criticalCount = 0;
-    _bloodStock.forEach((key, value) {
-      if (value < 5) criticalCount++;
-    });
-
-    if (criticalCount == 0) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFB71C1C),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Expanded(child: Text('$criticalCount blood types are at critical levels', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-        ],
       ),
     );
   }

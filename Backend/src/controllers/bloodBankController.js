@@ -176,7 +176,7 @@ const getDonations = async (req, res) => {
 const recordDistribution = async (req, res) => {
   try {
     const bloodBankId = req.params.id;
-    const { hospitalId, hospitalName, bloodGroup, units, dispatchDate, courierName, vehicleNumber, driverContact } = req.body;
+    const { requestId, hospitalId, hospitalName, bloodGroup, units, dispatchDate, courierName, vehicleNumber, driverContact } = req.body;
 
     const unitsToDistribute = parseInt(units);
     if (!bloodBankId || !hospitalId || !bloodGroup || !unitsToDistribute) {
@@ -206,6 +206,11 @@ const recordDistribution = async (req, res) => {
     // Update Stock
     stock.units -= unitsToDistribute;
     await stock.save();
+
+    // Update Request Status if linked
+    if (requestId) {
+      await HospitalBloodRequest.findByIdAndUpdate(requestId, { status: 'fulfilled' });
+    }
 
     res.status(201).json({ message: 'Distribution recorded and stock updated', distribution, remainingStock: stock });
 

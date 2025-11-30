@@ -32,6 +32,10 @@ class RequesterRequestDetailsScreen extends StatelessWidget {
             if (request.additionalDetails != null &&
                 request.additionalDetails!.isNotEmpty)
               _buildDetailRow('Additional Details', request.additionalDetails!),
+            if ((request.status == 'accepted' || request.status == 'fulfilled') && request.donorName != null)
+               _buildDetailRow('Donor Name', request.donorName!),
+            if ((request.status == 'accepted' || request.status == 'fulfilled') && request.donorName == null)
+               _buildDetailRow('Donor Name', 'Assigned (Name unavailable)'),
           ],
         ),
       ),

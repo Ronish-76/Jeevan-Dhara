@@ -5,6 +5,8 @@ import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/screens/auth/login_screen.dart';
 import 'package:jeevandhara/models/user_model.dart';
 import 'package:jeevandhara/services/api_service.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class DonorProfilePage extends StatefulWidget {
   const DonorProfilePage({super.key});
@@ -19,11 +21,19 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
   @override
   void initState() {
     super.initState();
+    _refreshProfile();
+  }
+
+  void _refreshProfile() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.user != null && authProvider.user!.id != null) {
-      _profileDataFuture = _fetchProfileData(authProvider.user!.id!);
+      setState(() {
+        _profileDataFuture = _fetchProfileData(authProvider.user!.id!);
+      });
     } else {
-      _profileDataFuture = Future.error('User not logged in');
+      setState(() {
+        _profileDataFuture = Future.error('User not logged in');
+      });
     }
   }
 
@@ -38,23 +48,38 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
       final history = (historyData as List).map((e) => BloodRequest.fromJson(e)).toList();
       
       int totalUnits = 0;
+      DateTime? latestHistoryDate;
+
       for (var req in history) {
         if (req.status == 'fulfilled') {
            totalUnits += req.units;
+           
+           // Track latest donation date from history
+           if (latestHistoryDate == null || req.createdAt.isAfter(latestHistoryDate)) {
+             latestHistoryDate = req.createdAt;
+           }
         }
       }
 
       // If backend totalDonations is 0 but history has fulfilled items, use history count
-      // (Backend usually updates totalDonations on fulfill, so user.totalDonations should be accurate)
       int totalDonations = user.totalDonations;
       if (totalDonations == 0 && history.isNotEmpty) {
          totalDonations = history.where((r) => r.status == 'fulfilled').length;
+      }
+      
+      // Determine effective last donation date
+      DateTime? effectiveLastDonation = user.lastDonationDate;
+      if (latestHistoryDate != null) {
+        if (effectiveLastDonation == null || latestHistoryDate.isAfter(effectiveLastDonation)) {
+          effectiveLastDonation = latestHistoryDate;
+        }
       }
 
       return {
         'user': user,
         'totalUnits': totalUnits,
         'totalDonations': totalDonations,
+        'effectiveLastDonation': effectiveLastDonation,
       };
     } catch (e) {
       throw Exception('Failed to load profile data: $e');
@@ -71,6 +96,34 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     }
   }
 
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(translate('change_language')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(translate('english')),
+              onTap: () {
+                changeLocale(context, 'en');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text(translate('nepali')),
+              onTap: () {
+                changeLocale(context, 'ne');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,38 +136,63 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
           IconButton(
             onPressed: _handleLogout,
             icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Logout',
+            tooltip: translate('logout'),
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _profileDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            final user = snapshot.data!['user'] as User;
-            final totalUnits = snapshot.data!['totalUnits'] as int;
-            final totalDonations = snapshot.data!['totalDonations'] as int;
-
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildProfileHeader(user),
-                  _buildDonationStatistics(totalDonations, totalUnits),
-                  _buildEligibilityCard(user),
-                  _buildInfoCard(user),
-                  _buildAccountManagementCard(context),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            );
-          } else {
-            return const Center(child: Text('No data found'));
-          }
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _refreshProfile();
+          await _profileDataFuture;
         },
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _profileDataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 100,
+                    child: Center(child: Text('Error: ${snapshot.error}')),
+                  ),
+                ],
+              );
+            } else if (snapshot.hasData) {
+              final user = snapshot.data!['user'] as User;
+              final totalUnits = snapshot.data!['totalUnits'] as int;
+              final totalDonations = snapshot.data!['totalDonations'] as int;
+              final effectiveLastDonation = snapshot.data!['effectiveLastDonation'] as DateTime?;
+
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildProfileHeader(user),
+                    _buildDonationStatistics(totalDonations, totalUnits),
+                    _buildEligibilityCard(effectiveLastDonation),
+                    _buildInfoCard(user, effectiveLastDonation),
+                    _buildSettingsCard(context),
+                    _buildAccountManagementCard(context),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              );
+            } else {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 500,
+                    child: Center(child: Text('No data found')),
+                  )
+                ],
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -151,10 +229,9 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Blood Group: ${donor.bloodGroup ?? 'N/A'}',
+            '${translate('blood_group')}: ${donor.bloodGroup ?? 'N/A'}',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
-          // Removed "Member since..." as requested
         ],
       ),
     );
@@ -164,20 +241,19 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center, // Centered since fewer items
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildStatCard(
             donations.toString(),
-            'Donations',
+            translate('donations'),
             Icons.bloodtype_outlined,
           ),
           const SizedBox(width: 40),
           _buildStatCard(
             units.toString(),
-            'Units',
+            translate('units'),
             Icons.favorite_border,
           ),
-          // Removed "Years" as requested
         ],
       ),
     );
@@ -201,8 +277,24 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
     );
   }
 
-  Widget _buildEligibilityCard(User donor) {
-    final isEligible = donor.isEligible;
+  Widget _buildEligibilityCard(DateTime? lastDonationDate) {
+    bool isEligible = true;
+    int daysRemaining = 0;
+
+    if (lastDonationDate != null) {
+      final nextEligibleDate = lastDonationDate.add(const Duration(days: 90));
+      final now = DateTime.now();
+      if (now.isBefore(nextEligibleDate)) {
+        daysRemaining = nextEligibleDate.difference(now).inDays;
+        if (daysRemaining < 0) daysRemaining = 0;
+        
+        // If daysRemaining is 0 but still before (less than 24 hours), show 1 day or handle as ineligible
+        if (daysRemaining == 0) daysRemaining = 1; 
+        
+        isEligible = false;
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -215,50 +307,108 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
           color: isEligible ? const Color(0xFF4CAF50) : const Color(0xFFD32F2F),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Icon(
-            isEligible ? Icons.check_circle_outline : Icons.highlight_off,
-            color: isEligible
-                ? const Color(0xFF4CAF50)
-                : const Color(0xFFD32F2F),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isEligible ? Icons.check_circle_outline : Icons.highlight_off,
+                color: isEligible
+                    ? const Color(0xFF4CAF50)
+                    : const Color(0xFFD32F2F),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isEligible ? translate('eligible_to_donate') : translate('not_eligible_to_donate'),
+                style: TextStyle(
+                  color: isEligible
+                      ? const Color(0xFF388E3C)
+                      : const Color(0xFFD32F2F),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            isEligible ? 'Eligible to Donate' : 'Not Eligible to Donate',
-            style: TextStyle(
-              color: isEligible
-                  ? const Color(0xFF388E3C)
-                  : const Color(0xFFD32F2F),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
+          if (!isEligible && daysRemaining > 0) ...[
+             const SizedBox(height: 8),
+             Text(
+               translate('eligible_in_days', args: {'days': daysRemaining}),
+               style: const TextStyle(
+                 color: Color(0xFFD32F2F),
+                 fontSize: 14,
+                 fontWeight: FontWeight.w500
+               ),
+             )
+          ]
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard(User donor) {
+  Widget _buildInfoCard(User donor, DateTime? lastDonationDate) {
     return _buildSectionCard(
-      title: 'Personal Information',
+      title: translate('personal_information'),
       children: [
         _buildInfoRow(
           Icons.phone_outlined,
-          'Phone Number',
+          translate('phone'),
           donor.phone ?? 'N/A',
         ),
-        _buildInfoRow(Icons.email_outlined, 'Email', donor.email ?? 'N/A'),
+        _buildInfoRow(Icons.email_outlined, translate('email'), donor.email ?? 'N/A'),
         _buildInfoRow(
           Icons.location_on_outlined,
-          'Location',
+          translate('location'),
           donor.location ?? 'N/A',
         ),
         _buildInfoRow(
           Icons.calendar_today_outlined,
-          'Last Donation',
-          donor.lastDonationDate?.toString().split(' ')[0] ?? 'N/A',
+          translate('last_donation'),
+          lastDonationDate != null 
+            ? DateFormat('MMM d, yyyy').format(lastDonationDate) 
+            : 'N/A',
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildSettingsCard(BuildContext context) {
+    final currentLocale = LocalizedApp.of(context).delegate.currentLocale;
+    final isNepali = currentLocale.languageCode == 'ne';
+
+    return _buildSectionCard(
+      title: translate('settings'), 
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            children: [
+              const Icon(Icons.language, color: Colors.grey, size: 20),
+              const SizedBox(width: 16),
+              Text(translate('language'), style: const TextStyle(fontWeight: FontWeight.w500)),
+              const Spacer(),
+              ToggleButtons(
+                isSelected: [!isNepali, isNepali],
+                onPressed: (int index) {
+                   if (index == 0) {
+                     changeLocale(context, 'en');
+                   } else {
+                     changeLocale(context, 'ne');
+                   }
+                },
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey,
+                selectedColor: Colors.white,
+                fillColor: const Color(0xFFD32F2F),
+                constraints: const BoxConstraints(minHeight: 36, minWidth: 60),
+                children: const [
+                  Text('English', style: TextStyle(fontSize: 12)),
+                  Text('नेपाली', style: TextStyle(fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -266,17 +416,16 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
 
   Widget _buildAccountManagementCard(BuildContext context) {
     return _buildSectionCard(
-      title: 'Account Management',
+      title: translate('account_management'),
       children: [
-        // Removed Notifications, Share, View History as requested
         SizedBox(
           width: double.infinity,
           child: TextButton.icon(
             onPressed: _handleLogout,
             icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-            label: const Text(
-              'Log Out',
-              style: TextStyle(
+            label: Text(
+              translate('logout'),
+              style: const TextStyle(
                 color: Color(0xFFD32F2F),
                 fontWeight: FontWeight.bold,
               ),
@@ -327,6 +476,4 @@ class _DonorProfilePageState extends State<DonorProfilePage> {
       ),
     );
   }
-
-  // Removed unused _buildManagementRow
 }

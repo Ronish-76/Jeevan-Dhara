@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/requester/requester_alerts_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_home_page.dart';
+import 'package:jeevandhara/screens/requester/requester_my_requests_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_profile_screen.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,8 +15,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _widgetOptions = <Widget>[
+  // Removed const to ensure rebuild on every build() call for translation
+  List<Widget> get _widgetOptions => [
     RequesterHomePage(),
+    RequesterMyRequestsScreen(),
     RequesterAlertsScreen(),
     RequesterProfileScreen(),
   ];
@@ -27,7 +31,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // This ensures the widget rebuilds when locale changes
+    var localizationDelegate = LocalizedApp.of(context).delegate;
+    
     return Scaffold(
+      // Re-generating the widgets list on every build ensures they get the new locale
       body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -51,15 +59,19 @@ class _MainScreenState extends State<MainScreen> {
           ),
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            items: <BottomNavigationBarItem>[
+              BottomNavigationBarItem(icon: const Icon(Icons.home), label: translate('home')),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_none),
-                label: 'Alerts',
+                icon: const Icon(Icons.list_alt_outlined),
+                label: translate('requests'),
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: 'Profile',
+                icon: const Icon(Icons.notifications_none),
+                label: translate('alerts'),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.person_outline),
+                label: translate('profile'),
               ),
             ],
             currentIndex: _selectedIndex,

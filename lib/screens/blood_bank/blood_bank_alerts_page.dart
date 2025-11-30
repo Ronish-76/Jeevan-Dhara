@@ -24,10 +24,14 @@ class _BloodBankAlertsPageState extends State<BloodBankAlertsPage> {
   }
 
   Future<void> _fetchAlerts() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       // 1. Fetch Inventory for Low Stock
       final profile = await ApiService().getBloodBankProfile(user.id!);
@@ -39,11 +43,13 @@ class _BloodBankAlertsPageState extends State<BloodBankAlertsPage> {
       // 3. Fetch Distributions (Deliveries)
       final distributions = await ApiService().getDistributions(user.id!);
 
-      _processData(inventory, requests, distributions);
+      if (mounted) {
+        _processData(inventory, requests, distributions);
+        setState(() => _isLoading = false);
+      }
 
     } catch (e) {
       debugPrint('Error fetching alerts: $e');
-    } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -127,43 +133,49 @@ class _BloodBankAlertsPageState extends State<BloodBankAlertsPage> {
         elevation: 0,
         foregroundColor: Colors.white,
         title: const Text('Alerts & Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [
-          IconButton(onPressed: _fetchAlerts, icon: const Icon(Icons.refresh)),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                if (_lowStockAlerts.isNotEmpty)
-                  _buildAlertsSection(
-                    title: 'Inventory Alerts',
-                    icon: Icons.warning_amber_rounded,
-                    color: const Color(0xFFF44336),
-                    alerts: _lowStockAlerts,
+      body: RefreshIndicator(
+        onRefresh: _fetchAlerts,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
+            : _lowStockAlerts.isEmpty && _requestAlerts.isEmpty && _deliveryAlerts.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(
+                        height: 500,
+                        child: Center(child: Text('No new alerts', style: TextStyle(color: Colors.grey))),
+                      )
+                    ],
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      if (_lowStockAlerts.isNotEmpty)
+                        _buildAlertsSection(
+                          title: 'Inventory Alerts',
+                          icon: Icons.warning_amber_rounded,
+                          color: const Color(0xFFF44336),
+                          alerts: _lowStockAlerts,
+                        ),
+                      if (_requestAlerts.isNotEmpty)
+                        _buildAlertsSection(
+                          title: 'Pending Requests',
+                          icon: Icons.assignment_late_outlined,
+                          color: const Color(0xFFFF9800),
+                          alerts: _requestAlerts,
+                        ),
+                      if (_deliveryAlerts.isNotEmpty)
+                        _buildAlertsSection(
+                          title: 'Recent Deliveries',
+                          icon: Icons.local_shipping_outlined,
+                          color: const Color(0xFF4CAF50),
+                          alerts: _deliveryAlerts,
+                        ),
+                    ],
                   ),
-                if (_requestAlerts.isNotEmpty)
-                  _buildAlertsSection(
-                    title: 'Pending Requests',
-                    icon: Icons.assignment_late_outlined,
-                    color: const Color(0xFFFF9800),
-                    alerts: _requestAlerts,
-                  ),
-                if (_deliveryAlerts.isNotEmpty)
-                  _buildAlertsSection(
-                    title: 'Recent Deliveries',
-                    icon: Icons.local_shipping_outlined,
-                    color: const Color(0xFF4CAF50),
-                    alerts: _deliveryAlerts,
-                  ),
-                if (_lowStockAlerts.isEmpty && _requestAlerts.isEmpty && _deliveryAlerts.isEmpty)
-                  const Center(child: Padding(
-                    padding: EdgeInsets.only(top: 50),
-                    child: Text('No new alerts', style: TextStyle(color: Colors.grey)),
-                  )),
-              ],
-            ),
+      ),
     );
   }
 

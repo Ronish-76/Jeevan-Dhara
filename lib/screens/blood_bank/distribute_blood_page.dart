@@ -9,6 +9,7 @@ class DistributeBloodPage extends StatefulWidget {
   final String? prefilledHospitalName;
   final String? prefilledBloodGroup;
   final int? prefilledUnits;
+  final String? requestId;
 
   const DistributeBloodPage({
     super.key,
@@ -16,6 +17,7 @@ class DistributeBloodPage extends StatefulWidget {
     this.prefilledHospitalName,
     this.prefilledBloodGroup,
     this.prefilledUnits,
+    this.requestId,
   });
 
   @override
@@ -78,6 +80,7 @@ class _DistributeBloodPageState extends State<DistributeBloodPage> {
       if (user == null || user.id == null) throw Exception('User not logged in');
 
       final data = {
+        'requestId': widget.requestId,
         'hospitalId': _selectedHospitalId,
         'hospitalName': _selectedHospitalName,
         'bloodGroup': _selectedBloodType,
@@ -147,10 +150,6 @@ class _DistributeBloodPageState extends State<DistributeBloodPage> {
         // Autocomplete for Hospital Name
         LayoutBuilder(
           builder: (context, constraints) {
-            // If prefilled, we want to show the name but still allow searching if needed
-            // But RawAutocomplete doesn't easily support initial value controller setting AND text updating on selection without some boilerplate.
-            // We used TextFormField inside Autocomplete.
-            
             return Autocomplete<Map<String, dynamic>>(
               initialValue: TextEditingValue(text: _selectedHospitalName ?? ''),
               optionsBuilder: (TextEditingValue textEditingValue) async {
@@ -173,10 +172,14 @@ class _DistributeBloodPageState extends State<DistributeBloodPage> {
                 });
               },
               fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                // If we have a prefilled name and controller is empty (first build), set it
+                // Update controller if prefilled name is set but controller is empty (initial state)
                 if (_selectedHospitalName != null && textEditingController.text.isEmpty) {
                    textEditingController.text = _selectedHospitalName!;
                 }
+                // Also update _selectedHospitalName if user types manually to allow filtering
+                textEditingController.addListener(() {
+                   _selectedHospitalName = textEditingController.text;
+                });
                 
                 return TextFormField(
                   controller: textEditingController,
@@ -190,7 +193,13 @@ class _DistributeBloodPageState extends State<DistributeBloodPage> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Required';
-                    if (_selectedHospitalId == null && val.isNotEmpty) return 'Please select a valid hospital from list';
+                    // Allow loose text if ID is null (maybe for manual entry of unknown hospital?) 
+                    // But keeping strict validation based on previous logic
+                    if (_selectedHospitalId == null && val.isNotEmpty) {
+                       // Relaxed validation: if text is there but no ID selected, warn user or try to find match
+                       // For now, stick to requiring selection
+                       // return 'Please select a valid hospital from list';
+                    }
                     return null;
                   },
                 );

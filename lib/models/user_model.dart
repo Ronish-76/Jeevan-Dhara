@@ -12,6 +12,8 @@ class User {
   final DateTime? lastDonationDate;
   final bool isAvailable;
   final int totalDonations;
+  final double? latitude;
+  final double? longitude;
 
   // Hospital / Blood Bank specific fields
   final String? hospital; // Often redundant with fullName if userType is hospital
@@ -38,6 +40,8 @@ class User {
     this.lastDonationDate,
     this.isAvailable = true,
     this.totalDonations = 0,
+    this.latitude,
+    this.longitude,
     this.hospital,
     this.hospitalLocation,
     this.hospitalPhone,
@@ -64,6 +68,8 @@ class User {
       lastDonationDate: json['lastDonationDate'] != null ? DateTime.parse(json['lastDonationDate']) : null,
       isAvailable: json['isAvailable'] ?? true,
       totalDonations: json['totalDonations'] ?? 0,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       
       // Mapping for Hospital/BloodBank
       hospital: json['hospitalName'] ?? json['hospital'], 

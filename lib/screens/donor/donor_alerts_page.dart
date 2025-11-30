@@ -6,6 +6,7 @@ import 'package:jeevandhara/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:jeevandhara/screens/donor/donor_request_details_page.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class DonorAlertsPage extends StatefulWidget {
   const DonorAlertsPage({super.key});
@@ -15,7 +16,7 @@ class DonorAlertsPage extends StatefulWidget {
 }
 
 class _DonorAlertsPageState extends State<DonorAlertsPage> {
-  late Future<List<Widget>> _alertsFuture;
+  late Future<Map<String, List<BloodRequest>>> _dataFuture;
 
   @override
   void initState() {
@@ -23,89 +24,45 @@ class _DonorAlertsPageState extends State<DonorAlertsPage> {
     _refreshAlerts();
   }
 
-  void _refreshAlerts() {
+  Future<void> _refreshAlerts() async {
     setState(() {
-      _alertsFuture = _generateAlerts();
+      _dataFuture = _fetchData();
     });
   }
 
-  Future<List<Widget>> _generateAlerts() async {
-    final user = Provider.of<AuthProvider>(context, listen: false).user;
-    if (user == null || user.id == null) return [const Center(child: Text('Please log in to view alerts'))];
-
-    final List<Widget> alerts = [];
-
+  Future<Map<String, List<BloodRequest>>> _fetchData() async {
     try {
-      // 1. Eligibility Alert
-      _addEligibilityAlert(user, alerts);
-
-      // Fetch data in parallel
       final requestsData = await ApiService().getAllBloodRequests();
-      final historyData = await ApiService().getDonorDonationHistory(user.id!);
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      
+      List<BloodRequest> history = [];
+      if (user != null && user.id != null) {
+        try {
+           final historyData = await ApiService().getDonorDonationHistory(user.id!);
+           history = (historyData as List).map((e) => BloodRequest.fromJson(e)).toList();
+        } catch(e) {
+           debugPrint('Error fetching history in alerts: $e');
+        }
+      }
 
       final requests = (requestsData as List).map((e) => BloodRequest.fromJson(e)).toList();
-      final history = (historyData as List).map((e) => BloodRequest.fromJson(e)).toList();
-
-      // 2. Emergency Requests (Pending, Emergency, Matching Blood Group)
-      final emergencyRequests = requests.where((r) => 
-        r.status == 'pending' && 
-        r.notifyViaEmergency && 
-        r.bloodGroup == user.bloodGroup
-      ).toList();
-
-      for (var req in emergencyRequests) {
-        alerts.add(_buildNotificationCard(
-          icon: Icons.warning,
-          title: 'Emergency Blood Request',
-          message: 'Urgent ${req.bloodGroup} blood needed at ${req.hospitalName}. Patient requires ${req.units} units.',
-          time: _getTimeAgo(req.createdAt),
-          priorityColor: const Color(0xFFD32F2F),
-          actionText: 'View Details',
-          onAction: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => DonorRequestDetailsPage(request: req)),
-            );
-          },
-        ));
-      }
-
-      // 3. Donation Confirmations (Fulfilled recently)
-      // Filter recent fulfillments (e.g., last 7 days or just top 5)
-      final recentDonations = history.where((r) => r.status == 'fulfilled').take(5).toList();
       
-      for (var donation in recentDonations) {
-        alerts.add(_buildNotificationCard(
-          icon: Icons.check_circle,
-          title: 'Donation Confirmed',
-          message: 'Your blood donation at ${donation.hospitalName} has been successfully recorded. Thank you!',
-          time: _getTimeAgo(donation.createdAt), // Ideally fulfilledAt, but createdAt used as proxy if needed
-          priorityColor: const Color(0xFF4CAF50),
-        ));
-      }
-
-      if (alerts.isEmpty) {
-        alerts.add(const Center(child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text('No new notifications'),
-        )));
-      }
-
+      return {
+        'requests': requests,
+        'history': history
+      };
     } catch (e) {
-      debugPrint('Error generating alerts: $e');
-      alerts.add(Center(child: Text('Error loading alerts: $e')));
+      throw Exception(e.toString());
     }
-
-    return alerts;
   }
 
   void _addEligibilityAlert(User user, List<Widget> alerts) {
     if (user.isEligible) {
       alerts.add(_buildNotificationCard(
         icon: Icons.calendar_today,
-        title: 'Eligible to Donate',
-        message: 'You are currently eligible to donate blood. Help save lives today!',
-        time: 'Now',
+        title: translate('eligible_to_donate'),
+        message: translate('eligible_msg'),
+        time: translate('just_now'),
         priorityColor: const Color(0xFF4CAF50),
       ));
     } else if (user.lastDonationDate != null) {
@@ -113,9 +70,9 @@ class _DonorAlertsPageState extends State<DonorAlertsPage> {
       final formattedDate = DateFormat('MMMM d, yyyy').format(nextEligible);
       alerts.add(_buildNotificationCard(
         icon: Icons.hourglass_bottom,
-        title: 'Waiting Period',
-        message: 'You will be eligible to donate again on $formattedDate.',
-        time: 'Status',
+        title: translate('waiting_period'),
+        message: translate('eligible_again_on', args: {'date': formattedDate}),
+        time: translate('status'),
         priorityColor: Colors.orange,
       ));
     }
@@ -124,11 +81,11 @@ class _DonorAlertsPageState extends State<DonorAlertsPage> {
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} mins ago';
+      return '${difference.inMinutes} ${translate('mins_ago')}';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
+      return '${difference.inHours} ${translate('hours_ago')}';
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+      return '${difference.inDays} ${translate('days_ago')}';
     } else {
       return DateFormat('MMM d').format(dateTime);
     }
@@ -141,30 +98,109 @@ class _DonorAlertsPageState extends State<DonorAlertsPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.notifications_active_outlined, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Alerts & Notifications'),
+            const Icon(Icons.notifications_active_outlined, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(translate('alerts_notifications')),
           ],
         ),
-        // Removed actions (Switch)
       ),
-      body: FutureBuilder<List<Widget>>(
-        future: _alertsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: snapshot.data ?? [],
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _refreshAlerts();
+          await _dataFuture;
         },
+        child: FutureBuilder<Map<String, List<BloodRequest>>>(
+          future: _dataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              // Wrap error in ListView so it's scrollable and refreshable
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 200,
+                    child: Center(child: Text('Error: ${snapshot.error}')),
+                  ),
+                ],
+              );
+            }
+            
+            final user = Provider.of<AuthProvider>(context).user;
+            if (user == null) {
+               return ListView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 children: [
+                   SizedBox(
+                     height: MediaQuery.of(context).size.height - 200,
+                     child: Center(child: Text(translate('please_login_view_alerts'))),
+                   ),
+                 ],
+               );
+            }
+
+            final requests = snapshot.data?['requests'] ?? [];
+            final history = snapshot.data?['history'] ?? [];
+            final List<Widget> alerts = [];
+
+            // 1. Eligibility Alert
+            _addEligibilityAlert(user, alerts);
+
+            // 2. Emergency Requests
+            final emergencyRequests = requests.where((r) => 
+              r.status == 'pending' && 
+              r.notifyViaEmergency && 
+              r.bloodGroup == user.bloodGroup
+            ).toList();
+
+            for (var req in emergencyRequests) {
+              alerts.add(_buildNotificationCard(
+                icon: Icons.warning,
+                title: translate('emergency_blood_request'),
+                message: translate('urgent_blood_needed_msg', args: {'bloodGroup': req.bloodGroup, 'hospital': req.hospitalName, 'units': req.units}),
+                time: _getTimeAgo(req.createdAt),
+                priorityColor: const Color(0xFFD32F2F),
+                actionText: translate('view_details'),
+                onAction: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => DonorRequestDetailsPage(request: req)),
+                  );
+                },
+              ));
+            }
+
+            // 3. Donation Confirmations
+            final recentDonations = history.where((r) => r.status == 'fulfilled').take(5).toList();
+            
+            for (var donation in recentDonations) {
+              alerts.add(_buildNotificationCard(
+                icon: Icons.check_circle,
+                title: translate('donation_confirmed'),
+                message: translate('donation_confirmed_msg', args: {'hospital': donation.hospitalName}),
+                time: _getTimeAgo(donation.createdAt),
+                priorityColor: const Color(0xFF4CAF50),
+              ));
+            }
+
+            if (alerts.isEmpty) {
+              alerts.add(Center(child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(translate('no_new_notifications')),
+              )));
+            }
+
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              children: alerts,
+            );
+          },
+        ),
       ),
     );
   }

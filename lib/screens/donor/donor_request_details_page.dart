@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class DonorRequestDetailsPage extends StatefulWidget {
   final BloodRequest request;
@@ -26,7 +27,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
 
   Color get _urgencyColor => request.notifyViaEmergency ? const Color(0xFFB71C1C) : const Color(0xFF2196F3);
 
-  String get _urgencyText => request.notifyViaEmergency ? 'Urgent Request: Immediate Attention Needed' : 'Standard Request';
+  String get _urgencyText => request.notifyViaEmergency ? translate('urgent_request_needed') : translate('standard_request');
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -40,11 +41,28 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
     }
   }
 
+  Future<void> _openMap() async {
+    // Combine hospital name and location for better search accuracy
+    final searchTerm = '${request.hospitalName} ${request.location}';
+    final query = Uri.encodeComponent(searchTerm);
+    final googleUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+
+    if (await canLaunchUrl(googleUrl)) {
+      await launchUrl(googleUrl, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(translate('could_not_open_maps'))),
+        );
+      }
+    }
+  }
+
   Future<void> _acceptRequest() async {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null && !user.isEligible) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('You are currently in the 3-month waiting period and cannot accept new requests.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(translate('ineligible_waiting_period')),
         backgroundColor: Colors.orange,
       ));
       return;
@@ -53,27 +71,20 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
     setState(() => _isLoading = true);
     try {
       if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to accept requests')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(translate('must_be_logged_in'))));
         return;
       }
 
-      await ApiService().acceptBloodRequest(request.id, user.id!);
+      if (request.isHospitalRequest) {
+         // Use specific method for hospital requests which might try alternative endpoints
+         await ApiService().acceptHospitalBloodRequest(request.id, user.id!);
+      } else {
+         await ApiService().acceptBloodRequest(request.id, user.id!);
+      }
       
       setState(() {
-        request = BloodRequest(
-          id: request.id,
-          patientName: request.patientName,
-          patientPhone: request.patientPhone,
-          bloodGroup: request.bloodGroup,
-          hospitalName: request.hospitalName,
-          location: request.location,
-          contactNumber: request.contactNumber,
-          additionalDetails: request.additionalDetails,
-          units: request.units,
-          notifyViaEmergency: request.notifyViaEmergency,
+        request = request.copyWith(
           status: 'accepted',
-          createdAt: request.createdAt,
-          requesterName: request.requesterName,
           donorId: user.id,
         );
       });
@@ -81,12 +92,12 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request accepted successfully! Thank you for your help.')),
+        SnackBar(content: Text(translate('request_accepted_success'))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to accept request: $e')),
+        SnackBar(content: Text('${translate('failed_accept_request')}: $e')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -96,39 +107,32 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
   Future<void> _fulfillRequest() async {
     setState(() => _isLoading = true);
     try {
-      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
       if (user == null) return;
 
-      await ApiService().fulfillBloodRequest(request.id, user.id!);
+      // Complete the request
+      if (request.isHospitalRequest) {
+         await ApiService().fulfillHospitalBloodRequest(request.id, user.id!);
+      } else {
+         await ApiService().fulfillBloodRequest(request.id, user.id!);
+      }
       
+      await authProvider.refreshUserProfile();
+
       setState(() {
-        request = BloodRequest(
-          id: request.id,
-          patientName: request.patientName,
-          patientPhone: request.patientPhone,
-          bloodGroup: request.bloodGroup,
-          hospitalName: request.hospitalName,
-          location: request.location,
-          contactNumber: request.contactNumber,
-          additionalDetails: request.additionalDetails,
-          units: request.units,
-          notifyViaEmergency: request.notifyViaEmergency,
-          status: 'fulfilled',
-          createdAt: request.createdAt,
-          requesterName: request.requesterName,
-          donorId: request.donorId,
-        );
+        request = request.copyWith(status: 'fulfilled');
       });
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request marked as completed! Thank you for your donation.')),
+        SnackBar(content: Text(translate('request_completed_success'))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to complete request: $e')),
+        SnackBar(content: Text('${translate('failed_complete_request')}: $e')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -145,7 +149,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Text('Request Details'),
+        title: Text(translate('request_details')),
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
@@ -163,7 +167,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You are currently ineligible to donate due to the waiting period.',
+                        translate('ineligible_donate_msg'),
                         style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
                       ),
                     ),
@@ -213,7 +217,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Patient Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(translate('patient_details'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           const Divider(height: 24),
           Row(
             children: [
@@ -221,15 +225,15 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(request.patientName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                    Text(request.patientName.isNotEmpty ? request.patientName : (request.hospitalName.isNotEmpty ? request.hospitalName : "Hospital Request"), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${request.units} Unit${request.units > 1 ? 's' : ''} Required', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFD32F2F))),
+                    Text('${request.units} ${request.units > 1 ? translate('units') : translate('unit')} ${translate('required')}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFD32F2F))),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         const Icon(Icons.phone, size: 16, color: Colors.grey),
                         const SizedBox(width: 4),
-                        Text(request.patientPhone, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                        Text(request.patientPhone.isNotEmpty ? request.patientPhone : request.contactNumber, style: const TextStyle(color: Colors.grey, fontSize: 14)),
                       ],
                     ),
                   ],
@@ -258,14 +262,14 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
 
   Widget _buildMedicalContextSection() {
     return _buildSectionCard(
-      title: 'Medical Information',
+      title: translate('medical_information'),
       icon: Icons.medical_services_outlined,
       children: [
-        _buildDetailRow(label: 'Additional Details:', value: request.additionalDetails ?? 'None provided', valueColor: const Color(0xFFD32F2F)),
-        _buildDetailRow(label: 'Requested By:', value: request.requesterName ?? 'Unknown'),
+        _buildDetailRow(label: '${translate('additional_details')}:', value: request.additionalDetails ?? translate('none_provided'), valueColor: const Color(0xFFD32F2F)),
+        _buildDetailRow(label: '${translate('requested_by')}:', value: request.requesterName ?? request.hospitalName),
         const SizedBox(height: 8),
         Text(
-          'Posted on: ${request.createdAt.toLocal().toString().split(' ')[0]}',
+          '${translate('posted_on')}: ${request.createdAt.toLocal().toString().split(' ')[0]}',
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],
@@ -274,7 +278,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
 
    Widget _buildHospitalLocationSection() {
     return _buildSectionCard(
-      title: 'Hospital Location',
+      title: translate('hospital_location'),
       icon: Icons.local_hospital_outlined,
       children: [
          Text(request.hospitalName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -282,9 +286,9 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
          Text(request.location, style: const TextStyle(color: Colors.grey, fontSize: 14)),
          const SizedBox(height: 12),
          OutlinedButton.icon(
-           onPressed: (){},
+           onPressed: _openMap,
            icon: const Icon(Icons.navigation_outlined, color: Color(0xFFD32F2F)),
-           label: const Text('Open in Maps', style: TextStyle(color: Color(0xFFD32F2F))),
+           label: Text(translate('open_in_maps'), style: const TextStyle(color: Color(0xFFD32F2F))),
            style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFD32F2F)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
          ),
       ],
@@ -293,12 +297,12 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
 
   Widget _buildImportantNotesSection() {
     return _buildSectionCard(
-      title: 'Important Notes',
+      title: translate('important_notes'),
       icon: Icons.info_outline,
-      children: const [
+      children: [
         Text(
-          'Please ensure you meet donation eligibility criteria. Confirm availability before visiting the hospital.',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+          translate('important_notes_msg'),
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],
     );
@@ -350,7 +354,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (request.status == 'pending')
+          if (request.status == 'pending' && !request.isHospitalRequest)
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: SizedBox(
@@ -365,7 +369,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                     elevation: isEligible ? 3 : 0,
                   ),
                   child: Text(
-                    isEligible ? 'ACCEPT REQUEST' : 'NOT ELIGIBLE',
+                    isEligible ? translate('accept_request').toUpperCase() : translate('not_eligible').toUpperCase(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -390,12 +394,12 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 3,
                       ),
-                      child: const Text('MARK AS COMPLETED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: Text(translate('mark_as_completed').toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     )
                   : ElevatedButton.icon(
                       onPressed: null, // Disabled
                       icon: const Icon(Icons.check_circle, color: Colors.white),
-                      label: const Text('ACCEPTED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      label: Text(translate('accepted').toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey, // Grey out if not my request
                         disabledBackgroundColor: Colors.grey.withOpacity(0.8),
@@ -414,7 +418,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
                 child: ElevatedButton.icon(
                   onPressed: null,
                   icon: const Icon(Icons.check_circle, color: Colors.white),
-                  label: const Text('COMPLETED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  label: Text(translate('completed').toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     disabledBackgroundColor: Colors.blue.withOpacity(0.8),
@@ -430,7 +434,7 @@ class _DonorRequestDetailsPageState extends State<DonorRequestDetailsPage> {
             child: OutlinedButton.icon(
               onPressed: () => _makePhoneCall(request.contactNumber),
               icon: const Icon(Icons.call, size: 18),
-              label: const Text('Call Hospital'),
+              label: Text(translate('call_hospital')),
               style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFD32F2F), side: const BorderSide(color: Color(0xFFD32F2F)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
             ),
           ),

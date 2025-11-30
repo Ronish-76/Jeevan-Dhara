@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/user_model.dart';
 import 'package:jeevandhara/services/auth_service.dart';
+import 'package:jeevandhara/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jeevandhara/services/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final ApiService _apiService = ApiService(); 
   User? _user;
   bool _isLoading = false;
   String? _errorMessage;
@@ -30,6 +33,9 @@ class AuthProvider with ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
         await prefs.setString('user', jsonEncode(userData));
+
+        // Initialize notifications
+        await NotificationService.initialize();
         
         _setLoading(false);
         return true;
@@ -61,9 +67,11 @@ class AuthProvider with ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
         await prefs.setString('user', jsonEncode(userResponseData));
+
+        // Initialize notifications
+        await NotificationService.initialize();
       } 
       // If no token, it means registration was successful but requires manual login
-      // which matches the current backend behavior
       
       _setLoading(false);
       return true;
@@ -106,6 +114,7 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    
     notifyListeners();
   }
 
@@ -117,7 +126,41 @@ class AuthProvider with ChangeNotifier {
     if (userDataString != null) {
       final userData = jsonDecode(userDataString);
       _user = User.fromJson(userData);
+      
+      // Initialize notifications
+      await NotificationService.initialize();
+      
       notifyListeners();
+    }
+  }
+  
+  /*
+  Future<void> _syncFCMToken() async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await _apiService.updateFCMToken(fcmToken);
+        print("FCM Token synced: $fcmToken");
+      }
+    } catch (e) {
+      print("Error syncing FCM token: $e");
+      // Don't block login/startup if this fails
+    }
+  }
+  */
+
+  Future<void> refreshUserProfile() async {
+    if (_user == null || _user!.id == null) return;
+    try {
+      final data = await _authService.getProfile(_user!.id!);
+      _user = User.fromJson(data);
+      
+      // Update SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(data));
+      notifyListeners();
+    } catch (e) {
+      // debugPrint('Failed to refresh user profile: $e');
     }
   }
 

@@ -27,7 +27,10 @@ class _HospitalAlertsPageState extends State<HospitalAlertsPage> {
     setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       // Fetch Requests only
       final requestData = await ApiService().getHospitalBloodRequests(user.id!);
@@ -114,28 +117,37 @@ class _HospitalAlertsPageState extends State<HospitalAlertsPage> {
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
         title: const Text('Request Updates'),
-        actions: [
-          IconButton(onPressed: _fetchAlerts, icon: const Icon(Icons.refresh, color: Colors.white)),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _inProcessRequests.isEmpty && _completedRequests.isEmpty
-              ? const Center(child: Text('No request updates', style: TextStyle(color: Colors.grey)))
-              : ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
-                    if (_inProcessRequests.isNotEmpty) ...[
-                      _buildSectionHeader('Request Process', Icons.sync, Colors.blue),
-                      ..._inProcessRequests.map((a) => _buildAlertCard(a)),
-                      const SizedBox(height: 16),
+      body: RefreshIndicator(
+        onRefresh: _fetchAlerts,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _inProcessRequests.isEmpty && _completedRequests.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(
+                        height: 500,
+                        child: Center(child: Text('No request updates', style: TextStyle(color: Colors.grey))),
+                      )
                     ],
-                    if (_completedRequests.isNotEmpty) ...[
-                      _buildSectionHeader('Request Completed', Icons.check_circle_outline, Colors.green),
-                       ..._completedRequests.map((a) => _buildAlertCard(a)),
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      if (_inProcessRequests.isNotEmpty) ...[
+                        _buildSectionHeader('Request Process', Icons.sync, Colors.blue),
+                        ..._inProcessRequests.map((a) => _buildAlertCard(a)),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_completedRequests.isNotEmpty) ...[
+                        _buildSectionHeader('Request Completed', Icons.check_circle_outline, Colors.green),
+                         ..._completedRequests.map((a) => _buildAlertCard(a)),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
+      ),
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:jeevandhara/screens/main_screen.dart';
 import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
 import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
 import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,14 +65,14 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Unknown user type')),
+              SnackBar(content: Text(translate('unknown_user_type'))),
             );
           }
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Login failed'),
+            content: Text(authProvider.errorMessage ?? translate('login_failed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -79,25 +80,52 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _changeLanguage(BuildContext context) {
+    final currentLocale = LocalizedApp.of(context).delegate.currentLocale;
+    if (currentLocale.languageCode == 'en') {
+      changeLocale(context, 'ne');
+    } else {
+      changeLocale(context, 'en');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = Provider.of<AuthProvider>(context).isLoading;
+    var localizationDelegate = LocalizedApp.of(context).delegate;
+    final isNepali = localizationDelegate.currentLocale.languageCode == 'ne';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          TextButton.icon(
+            onPressed: () => _changeLanguage(context),
+            icon: const Icon(Icons.language, color: Color(0xFFD32F2F)),
+            label: Text(
+              isNepali ? 'English' : 'नेपाली',
+              style: const TextStyle(
+                color: Color(0xFFD32F2F),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 32.0),
               Image.asset('assets/images/jeevan_dhara_logo.png', height: 100.0),
               const SizedBox(height: 16.0),
-              const Text(
-                'Jeevan Dhara',
+              Text(
+                translate('app_name'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 28.0,
                   fontWeight: FontWeight.bold,
@@ -105,10 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 8.0),
-              const Text(
-                'Saving lives, one donation at a time',
+              Text(
+                translate('saving_lives_slogan'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16.0,
                   color: Color(0xFF666666),
@@ -124,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Enter your email',
+                        labelText: translate('email'),
+                        hintText: translate('enter_email'),
                         prefixIcon: const Icon(Icons.email_outlined),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.clear),
@@ -146,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return translate('valid_email_required');
                         }
                         return null;
                       },
@@ -156,8 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       obscureText: !_passwordVisible,
                       decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
+                        labelText: translate('password'),
+                        hintText: translate('enter_password'),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -186,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return translate('password_length_error'); // Using generic error for empty too
                         }
                         return null;
                       },
@@ -204,9 +232,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
+                        child: Text(
+                          translate('forgot_password'),
+                          style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 14.0,
                             color: Color(0xFF1976D2),
@@ -234,9 +262,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
-                              'Login',
-                              style: TextStyle(
+                          : Text(
+                              translate('login'),
+                              style: const TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 16.0,
                                 fontWeight: FontWeight.w600,
@@ -251,9 +279,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    "Don\'t have an account?",
-                    style: TextStyle(
+                  Text(
+                    translate('dont_have_account'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14.0,
                       color: Color(0xFF666666),
@@ -268,9 +296,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       );
                     },
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(
+                    child: Text(
+                      translate('register'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14.0,
                         fontWeight: FontWeight.bold,

@@ -57,8 +57,6 @@ class _ManageInventoryPageState extends State<ManageInventoryPage> {
           final inventory = Map<String, dynamic>.from(profileData['inventory'] ?? {});
           
           int totalUnits = 0;
-          int expiringSoon = 0; 
-          int bloodTypesCount = 0;
 
           final List<Map<String, dynamic>> stockItems = [];
           
@@ -66,7 +64,6 @@ class _ManageInventoryPageState extends State<ManageInventoryPage> {
             final qty = (quantity as num).toInt();
             if (qty > 0) {
               totalUnits += qty;
-              bloodTypesCount++;
               
               stockItems.add({
                 'group': group,
@@ -79,9 +76,7 @@ class _ManageInventoryPageState extends State<ManageInventoryPage> {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             children: [
-              // Removed Search Bar
-              _buildInventoryOverview(totalUnits.toString(), expiringSoon.toString(), bloodTypesCount.toString()),
-              // Removed Filter/Sort Bar (All Blood Groups)
+              _buildInventoryOverview(totalUnits.toString()),
               const SizedBox(height: 24),
               _buildStockItemsList(stockItems),
             ],
@@ -91,17 +86,13 @@ class _ManageInventoryPageState extends State<ManageInventoryPage> {
     );
   }
 
-  Widget _buildInventoryOverview(String total, String expiring, String types) {
+  Widget _buildInventoryOverview(String total) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(child: _StatCard(value: total, label: 'Total Units', color: const Color(0xFF2196F3))),
-          const SizedBox(width: 12),
-          Expanded(child: _StatCard(value: expiring, label: 'Expiring Soon', color: const Color(0xFFFF9800))),
-          const SizedBox(width: 12),
-          Expanded(child: _StatCard(value: types, label: 'Blood Types', color: const Color(0xFF4CAF50))),
         ],
       ),
     );
@@ -155,7 +146,7 @@ class _ManageInventoryPageState extends State<ManageInventoryPage> {
                 ]
               ),
             ),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.edit_outlined, color: Colors.grey)),
+            // Removed the edit icon (pencil logo) as requested
           ],
         ),
       ),

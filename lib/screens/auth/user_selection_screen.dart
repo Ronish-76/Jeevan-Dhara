@@ -3,6 +3,7 @@ import 'package:jeevandhara/screens/auth/blood_bank_registration_screen.dart';
 import 'package:jeevandhara/screens/auth/donor_registration_screen.dart';
 import 'package:jeevandhara/screens/auth/hospital_registration_screen.dart';
 import 'package:jeevandhara/screens/auth/requester_registration_screen.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class UserSelectionScreen extends StatelessWidget {
   const UserSelectionScreen({super.key});
@@ -23,9 +24,9 @@ class UserSelectionScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Register as :',
-              style: TextStyle(
+            Text(
+              translate('register_as'),
+              style: const TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF333333),
@@ -37,10 +38,10 @@ class UserSelectionScreen extends StatelessWidget {
               runSpacing: 20.0,
               alignment: WrapAlignment.center,
               children: <Widget>[
-                _buildRoleButton(context, 'assets/images/Requester_logo.png', 'Requester', const RequesterRegistrationScreen()),
-                _buildRoleButton(context, 'assets/images/Donor_logo.png', 'Donor', const DonorRegistrationScreen()),
-                _buildRoleButton(context, 'assets/images/Hospital_logo.png', 'Hospital', const HospitalRegistrationScreen()),
-                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', 'Blood Bank', const BloodBankRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Requester_logo.png', translate('requester'), const RequesterRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Donor_logo.png', translate('donor'), const DonorRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Hospital_logo.png', translate('hospital'), const HospitalRegistrationScreen()),
+                _buildRoleButton(context, 'assets/images/Blood_bank_logo.png', translate('blood_bank'), const BloodBankRegistrationScreen()),
               ],
             ),
           ],

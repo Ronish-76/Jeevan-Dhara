@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:jeevandhara/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
-import 'package:jeevandhara/services/api_service.dart';
-import 'package:jeevandhara/screens/auth/user_selection_screen.dart';
+import 'package:jeevandhara/screens/auth/login_screen.dart';
 
 class BloodBankProfilePage extends StatefulWidget {
   const BloodBankProfilePage({super.key});
@@ -17,12 +17,35 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
   @override
   void initState() {
     super.initState();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null && user.id != null) {
-      _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
+      setState(() {
+        _profileFuture = _fetchProfile(user.id!);
+      });
     } else {
-      _profileFuture = Future.error('User not logged in');
+      setState(() {
+        _profileFuture = Future.error('User not logged in');
+      });
     }
+  }
+
+  Future<void> _refreshProfile() async {
+    _loadProfile();
+    try {
+      await _profileFuture;
+    } catch (_) {}
+  }
+  
+  Future<Map<String, dynamic>> _fetchProfile(String id) async {
+     try {
+       return await ApiService().getBloodBankProfile(id);
+     } catch (e) {
+       throw Exception('Failed to load profile');
+     }
   }
 
   @override
@@ -34,48 +57,66 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
         elevation: 0,
         foregroundColor: Colors.white,
         title: const Text('Blood Bank Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [], // Removed Edit Icon
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error loading profile: ${snapshot.error}'));
-          }
-          
-          final profile = snapshot.data;
-          if (profile == null) {
-            return const Center(child: Text('No profile data found'));
-          }
+      body: RefreshIndicator(
+        onRefresh: _refreshProfile,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 100,
+                    child: Center(child: Text('Error loading profile: ${snapshot.error}')),
+                  ),
+                ],
+              );
+            }
+            
+            final profile = snapshot.data;
+            if (profile == null) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 500,
+                    child: Center(child: Text('No profile data found')),
+                  ),
+                ],
+              );
+            }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _buildOrganizationCard(profile),
-                const SizedBox(height: 20),
-                // _buildPerformanceDashboard(), // Removing as it seems related to analytics/metrics context
-                _buildContactInfoCard(profile),
-                const SizedBox(height: 20),
-                _buildOperatingHoursCard(), 
-                const SizedBox(height: 20),
-                _buildCertificationsCard(profile),
-                const SizedBox(height: 20),
-                _buildActionsPanel(context),
-              ],
-            ),
-          );
-        },
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildOrganizationCard(profile),
+                  const SizedBox(height: 20),
+                  _buildContactInfoCard(profile),
+                  const SizedBox(height: 20),
+                  _buildOperatingHoursCard(), 
+                  const SizedBox(height: 20),
+                  _buildCertificationsCard(profile),
+                  const SizedBox(height: 20),
+                  _buildActionsPanel(context),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildOrganizationCard(Map<String, dynamic> profile) {
     final name = profile['bloodBankName'] ?? 'Blood Bank';
-    final subTitle = profile['registrationNumber'] != null ? 'Reg ID: ${profile['registrationNumber']}' : 'Registered Blood Bank';
+    final subTitle = profile['licenseNumber'] != null ? 'Reg ID: ${profile['licenseNumber']}' : 'Registered Blood Bank';
 
     return _buildInfoCard(
       padding: const EdgeInsets.all(20),
@@ -101,13 +142,10 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
               ),
             ],
           ),
-          // Removed Metrics Row (Donations, Requests, Service, Success Rate)
         ],
       ),
     );
   }
-
-  // Removed _buildPerformanceDashboard as it's likely what user meant or at least related unwanted metrics
 
   Widget _buildContactInfoCard(Map<String, dynamic> profile) {
     final address = profile['fullAddress'] ?? 'Unknown Address';
@@ -121,7 +159,7 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
           _buildContactRow(Icons.location_on_outlined, 'Address', address),
           _buildContactRow(Icons.phone_outlined, 'Primary Phone', phone),
           _buildContactRow(Icons.email_outlined, 'Email Address', email),
-          _buildContactRow(Icons.language_outlined, 'Website', 'www.jeevandhara.org'), // Placeholder
+          _buildContactRow(Icons.language_outlined, 'Website', 'www.jeevandhara.org'), 
         ],
       ),
     );
@@ -162,7 +200,6 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
   Widget _buildActionsPanel(BuildContext context) {
     return Column(
       children: [
-        // Removed Settings Tile
         ListTile(
           title: const Text('Logout', style: TextStyle(color: Color(0xFFD32F2F))),
           leading: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
@@ -170,7 +207,7 @@ class _BloodBankProfilePageState extends State<BloodBankProfilePage> {
             await Provider.of<AuthProvider>(context, listen: false).logout();
             if (context.mounted) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const UserSelectionScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
                 (route) => false,
               );
             }

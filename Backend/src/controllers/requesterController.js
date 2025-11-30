@@ -58,12 +58,23 @@ const registerRequester = async (req, res) => {
 
 const updateRequesterProfile = async (req, res) => {
   try {
-    const { hospitalName, hospitalLocation, hospitalPhone } = req.body;
+    const { hospitalName, hospitalLocation, hospitalPhone, location, latitude, longitude } = req.body;
     const requesterId = req.params.id;
+
+    // Build update object dynamically to include optional fields
+    const updateData = { 
+      hospitalName, 
+      hospitalLocation, 
+      hospitalPhone 
+    };
+
+    if (location) updateData.location = location;
+    if (latitude !== undefined) updateData.latitude = latitude;
+    if (longitude !== undefined) updateData.longitude = longitude;
 
     const requester = await Requester.findByIdAndUpdate(
       requesterId,
-      { hospitalName, hospitalLocation, hospitalPhone },
+      updateData,
       { new: true, runValidators: true }
     ).select('-password');
 

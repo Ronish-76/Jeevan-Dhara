@@ -88,7 +88,11 @@ class _RequesterPostBloodRequestScreenState
       _phoneController.text = user.hospitalPhone ?? '';
       _patientNameController.text = user.fullName ?? '';
       _patientPhoneController.text = user.phone ?? '';
-      _selectedBloodGroup = user.bloodGroup;
+      
+      // Only auto-fill if the blood group is valid and in the list
+      if (user.bloodGroup != null && _bloodGroups.contains(user.bloodGroup)) {
+        _selectedBloodGroup = user.bloodGroup;
+      }
     });
   }
 
@@ -221,8 +225,11 @@ class _RequesterPostBloodRequestScreenState
                       hint: 'Select blood group',
                       value: _selectedBloodGroup,
                       items: _bloodGroups,
-                      onChangedCallback:
-                          null, // Disabled as it comes from profile
+                      onChangedCallback: (value) {
+                        setState(() {
+                          _selectedBloodGroup = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
                     _buildFormField(

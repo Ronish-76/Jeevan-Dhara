@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
+import 'package:jeevandhara/services/notification_service.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class RequesterAlertsScreen extends StatefulWidget {
   const RequesterAlertsScreen({super.key});
@@ -20,12 +22,58 @@ class _RequesterAlertsScreenState extends State<RequesterAlertsScreen> {
     _loadAlerts();
   }
 
-  void _loadAlerts() {
+  Future<void> _loadAlerts() async {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null && user.id != null) {
-      _alertsFuture = ApiService().getRequesterBloodRequests(user.id!);
+      setState(() {
+        _alertsFuture = ApiService().getRequesterBloodRequests(user.id!).then((data) {
+          _checkAndNotify(data);
+          return data;
+        });
+      });
     } else {
-      _alertsFuture = Future.error('User not logged in');
+      setState(() {
+        _alertsFuture = Future.error('User not logged in');
+      });
+    }
+  }
+
+  void _checkAndNotify(List<dynamic> requests) {
+    if (requests.isNotEmpty) {
+      // Just check the most recent request for updates
+      // In a real app, we would store the last seen timestamp or ID to compare
+      final latestRequest = requests.first;
+      final status = latestRequest['status'];
+      final updatedAt = latestRequest['updatedAt'] != null ? DateTime.parse(latestRequest['updatedAt']) : DateTime.now();
+      
+      // Only notify if updated recently (e.g., within last 5 minutes) to avoid spam on every load
+      if (DateTime.now().difference(updatedAt).inMinutes < 5) {
+        String title = '';
+        String body = '';
+        final bloodGroup = latestRequest['bloodGroup'];
+        final donorName = (latestRequest['donor'] != null && latestRequest['donor'] is Map) 
+            ? latestRequest['donor']['fullName'] 
+            : 'a donor';
+
+        if (status == 'accepted') {
+          title = 'Request Accepted';
+          body = 'Your $bloodGroup request was accepted by $donorName.';
+        } else if (status == 'fulfilled') {
+          title = 'Request Fulfilled';
+          body = 'Your $bloodGroup request was fulfilled by $donorName.';
+        } else if (status == 'cancelled') {
+          title = 'Request Cancelled';
+          body = 'Your $bloodGroup request was cancelled.';
+        }
+
+        if (title.isNotEmpty) {
+          NotificationService.showNotification(
+            id: latestRequest['_id'].hashCode, 
+            title: title, 
+            body: body
+          );
+        }
+      }
     }
   }
 
@@ -35,44 +83,63 @@ class _RequesterAlertsScreenState extends State<RequesterAlertsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
-        title: const Text('My Alerts'),
-        actions: [IconButton(onPressed: () {
-          setState(() {
-            _loadAlerts();
-          });
-        }, icon: const Icon(Icons.refresh))],
+        title: Text(translate('notifications')),
       ),
       backgroundColor: const Color(0xFFF9F9F9),
-      body: FutureBuilder<List<dynamic>>(
-        future: _alertsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error loading alerts: ${snapshot.error}'));
-          }
-          
-          final requests = snapshot.data;
-          if (requests == null || requests.isEmpty) {
-            return const Center(child: Text('No alerts found'));
-          }
+      body: RefreshIndicator(
+        onRefresh: _loadAlerts,
+        child: FutureBuilder<List<dynamic>>(
+          future: _alertsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 200,
+                    child: Center(child: Text('Error loading alerts: ${snapshot.error}')),
+                  ),
+                ],
+              );
+            }
+            
+            final requests = snapshot.data;
+            if (requests == null || requests.isEmpty) {
+              return ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 200,
+                    child: Center(child: Text(translate('no_notifications'))),
+                  ),
+                ],
+              );
+            }
 
-          // Transform requests into alerts
-          final alerts = _generateAlerts(requests);
+            // Transform requests into alerts
+            final alerts = _generateAlerts(requests);
 
-          if (alerts.isEmpty) {
-             return const Center(child: Text('No active alerts'));
-          }
+            if (alerts.isEmpty) {
+               return ListView(
+                 children: [
+                   SizedBox(
+                     height: MediaQuery.of(context).size.height - 200,
+                     child: Center(child: Text(translate('no_notifications'))),
+                   ),
+                 ],
+               );
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: alerts.length,
-            itemBuilder: (context, index) {
-              return alerts[index];
-            },
-          );
-        },
+            return ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: alerts.length,
+              itemBuilder: (context, index) {
+                return alerts[index];
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -87,34 +154,34 @@ class _RequesterAlertsScreenState extends State<RequesterAlertsScreen> {
       final timeAgo = _getTimeAgo(updatedAt);
       final donorName = (request['donor'] != null && request['donor'] is Map) 
           ? request['donor']['fullName'] 
-          : 'a donor';
+          : translate('a_donor'); // 'a donor' needs to be in your translation if used
 
       if (status == 'pending') {
         alertWidgets.add(_buildAlertCard(
-          title: 'Request In Process',
-          message: 'Your $bloodGroup request is active. We are finding available donors.',
+          title: translate('request_in_process'),
+          message: translate('request_in_process_msg', args: {'bloodGroup': bloodGroup}),
           time: timeAgo,
           priorityColor: Colors.blue,
         ));
       } else if (status == 'accepted') {
         alertWidgets.add(_buildAlertCard(
-          title: 'Request Accepted',
-          message: 'Your $bloodGroup request was accepted by $donorName.',
+          title: translate('request_accepted'),
+          message: translate('request_accepted_msg', args: {'bloodGroup': bloodGroup, 'donorName': donorName}),
           time: timeAgo,
           priorityColor: const Color(0xFF4CAF50), // Green
-          action: 'Contact Donor',
+          action: translate('contact_donor'),
         ));
       } else if (status == 'cancelled') {
         alertWidgets.add(_buildAlertCard(
-          title: 'Request Cancelled',
-          message: 'Your $bloodGroup request was cancelled.',
+          title: translate('request_cancelled'),
+          message: translate('request_cancelled_msg', args: {'bloodGroup': bloodGroup}),
           time: timeAgo,
           priorityColor: const Color(0xFFD32F2F), // Red
         ));
       } else if (status == 'fulfilled') {
         alertWidgets.add(_buildAlertCard(
-          title: 'Request Fulfilled',
-          message: 'Your $bloodGroup request was successfully fulfilled by $donorName.',
+          title: translate('request_fulfilled'),
+          message: translate('request_fulfilled_msg', args: {'bloodGroup': bloodGroup, 'donorName': donorName}),
           time: timeAgo,
           priorityColor: const Color(0xFF2E7D32), // Dark Green
         ));
@@ -126,9 +193,9 @@ class _RequesterAlertsScreenState extends State<RequesterAlertsScreen> {
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} min ago';
+      return '${difference.inMinutes} ${translate('mins_ago')}';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
+      return '${difference.inHours} ${translate('hours_ago')}';
     } else {
       return DateFormat('MMM d').format(dateTime);
     }

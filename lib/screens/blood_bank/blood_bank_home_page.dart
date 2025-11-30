@@ -3,11 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/screens/blood_bank/analytics_reports_page.dart';
-import 'package:jeevandhara/screens/blood_bank/distribute_blood_page.dart';
 import 'package:jeevandhara/screens/blood_bank/donation_history_page.dart';
 import 'package:jeevandhara/screens/blood_bank/manage_inventory_page.dart';
 import 'package:jeevandhara/screens/blood_bank/receive_donations_page.dart';
-import 'package:jeevandhara/screens/blood_bank/track_requests_page.dart';
+import 'package:jeevandhara/screens/blood_bank/track_requests_page.dart'; // Still imported as it's used for Track Requests Card
 import 'package:intl/intl.dart';
 
 class BloodBankHomePage extends StatefulWidget {
@@ -24,12 +23,20 @@ class _BloodBankHomePageState extends State<BloodBankHomePage> {
   @override
   void initState() {
     super.initState();
+    _refreshData();
+  }
+
+  Future<void> _refreshData() async {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null && user.id != null) {
-      _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
-      _fetchRecentDonations(user.id!);
+      setState(() {
+        _profileFuture = ApiService().getBloodBankProfile(user.id!).then((data) => data as Map<String, dynamic>);
+      });
+      await _fetchRecentDonations(user.id!);
     } else {
-      _profileFuture = Future.error('User not logged in');
+      setState(() {
+        _profileFuture = Future.error('User not logged in');
+      });
     }
   }
 
@@ -50,41 +57,61 @@ class _BloodBankHomePageState extends State<BloodBankHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-             return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-             return Center(child: Text('Error loading profile: ${snapshot.error}'));
-          }
-          
-          final profileData = snapshot.data;
-          if (profileData == null) {
-            return const Center(child: Text('No profile data found'));
-          }
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+               return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+               return ListView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 children: [
+                   SizedBox(
+                     height: MediaQuery.of(context).size.height - 100,
+                     child: Center(child: Text('Error loading profile: ${snapshot.error}')),
+                   )
+                 ],
+               );
+            }
+            
+            final profileData = snapshot.data;
+            if (profileData == null) {
+              return ListView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 children: const [
+                   SizedBox(
+                     height: 500,
+                     child: Center(child: Text('No profile data found')),
+                   )
+                 ],
+               );
+            }
 
-          final inventory = Map<String, dynamic>.from(profileData['inventory'] ?? {});
-          final name = profileData['bloodBankName'] ?? 'Blood Bank';
-          final location = profileData['fullAddress'] ?? 'Location';
+            final inventory = Map<String, dynamic>.from(profileData['inventory'] ?? {});
+            final name = profileData['bloodBankName'] ?? 'Blood Bank';
+            final location = profileData['fullAddress'] ?? 'Location';
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeader(name, location),
-                const SizedBox(height: 16),
-                _buildQuickActionsGrid(context),
-                const SizedBox(height: 16),
-                _buildCriticalStockAlert(inventory),
-                const SizedBox(height: 16),
-                _buildInventorySection(inventory),
-                const SizedBox(height: 16),
-                _buildRecentDonations(),
-              ],
-            ),
-          );
-        },
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  _buildHeader(name, location),
+                  const SizedBox(height: 16),
+                  _buildQuickActionsGrid(context),
+                  const SizedBox(height: 16),
+                  _buildCriticalStockAlert(inventory),
+                  const SizedBox(height: 16),
+                  _buildInventorySection(inventory),
+                  const SizedBox(height: 16),
+                  _buildRecentDonations(),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -134,11 +161,13 @@ class _BloodBankHomePageState extends State<BloodBankHomePage> {
           _buildActionCard(context, 'Receive Donations', 'Register new donations', Icons.bloodtype_outlined, onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ReceiveDonationsPage()));
           }),
+          // Donation History remains
           _buildActionCard(context, 'Donation History', 'View all donations', Icons.history, onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const DonationHistoryPage()));
           }),
-          _buildActionCard(context, 'Distribute Blood', 'Manage distributions', Icons.local_shipping_outlined, isPrimary: true, onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributeBloodPage()));
+          // Removed Distribute Blood, Added Track Requests
+          _buildActionCard(context, 'Track Requests', 'Manage requests', Icons.list_alt, isPrimary: true, onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const TrackRequestsPage()));
           }),
         ],
       ),
@@ -190,7 +219,6 @@ class _BloodBankHomePageState extends State<BloodBankHomePage> {
           const Icon(Icons.warning, color: Colors.white, size: 24),
           const SizedBox(width: 12),
           Expanded(child: Text('$lowStockCount blood types are running low', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-          // Removed View Button
         ],
       ),
     );
@@ -205,7 +233,7 @@ class _BloodBankHomePageState extends State<BloodBankHomePage> {
         children: [
            const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [Text('Current Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600))], // Removed View All button
+            children: [Text('Current Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600))], 
           ),
           const SizedBox(height: 12),
           if (inventory.isEmpty) 

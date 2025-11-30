@@ -5,13 +5,16 @@ const donorSchema = new mongoose.Schema({
   email: { type: String, required: true },
   phone: { type: String, required: true },
   location: { type: String, required: true },
+  latitude: { type: Number },
+  longitude: { type: Number },
   age: { type: Number, required: true },
   bloodGroup: { type: String, required: true, enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] },
   password: { type: String, required: true },
   healthProblems: { type: String },
   lastDonationDate: { type: Date },
   isAvailable: { type: Boolean, default: false },
-  donationCapability: { type: String, required: true, enum: ['Yes', 'No'] }
+  donationCapability: { type: String, required: true, enum: ['Yes', 'No'] },
+  fcmToken: { type: String, default: null }
 }, { timestamps: true });
 
 

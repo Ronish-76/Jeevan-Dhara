@@ -22,10 +22,14 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
   }
 
   Future<void> _fetchDonations() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       final data = await ApiService().getDonations(user.id!);
       if (mounted) {
@@ -56,18 +60,20 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildQuickStats(),
-                const SizedBox(height: 16),
-                _buildFilterControls(),
-                const SizedBox(height: 16),
-                _buildDonationsList(),
-              ],
-            ),
+      body: RefreshIndicator(
+        onRefresh: _fetchDonations,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  _buildQuickStats(),
+                  const SizedBox(height: 16),
+                  _buildDonationsList(),
+                ],
+              ),
+      ),
     );
   }
 
@@ -77,39 +83,13 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
     for (var d in _donations) {
       totalUnits += (d['units'] as num).toInt();
     }
-    // Assuming all recorded donations are Verified for now as they are entered by bank staff
-    int verified = totalDonations; 
-    int pending = 0;
-
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _StatItem(value: totalDonations.toString(), label: 'Total Donations'),
         _StatItem(value: totalUnits.toString(), label: 'Total Units'),
-        _StatItem(value: verified.toString(), label: 'Verified'),
-        _StatItem(value: pending.toString(), label: 'Pending'),
       ],
-    );
-  }
-
-  Widget _buildFilterControls() {
-    return const Card(
-      elevation: 1,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('All Status', style: TextStyle(fontWeight: FontWeight.w500)),
-            Icon(Icons.arrow_drop_down),
-            VerticalDivider(),
-            Text('All Time', style: TextStyle(fontWeight: FontWeight.w500)),
-            Icon(Icons.arrow_drop_down),
-            VerticalDivider(),
-            Icon(Icons.calendar_today_outlined, size: 20),
-          ],
-        ),
-      ),
     );
   }
 
@@ -136,8 +116,6 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
     final id = (donation['_id'] as String).substring(0, 8).toUpperCase(); // Short ID
     final units = donation['units'];
     final blood = donation['bloodGroup'];
-    // Assuming verified since it's in history
-    const status = 'Verified'; 
     const color = Colors.green;
 
     return Card(
@@ -163,11 +141,6 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
                     ),
                 ],
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: const Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

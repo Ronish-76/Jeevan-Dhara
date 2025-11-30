@@ -18,6 +18,8 @@ const hospitalSchema = new mongoose.Schema({
   },
   medicalLicenseNumber: { type: String, required: true },
   password: { type: String, required: true },
+  latitude: { type: Number },
+  longitude: { type: Number },
   isVerified: { type: Boolean, default: false },
   verificationStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
 }, { timestamps: true });

@@ -20,14 +20,18 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _fetchRequests();
   }
 
   Future<void> _fetchRequests() async {
+    setState(() => _isLoading = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
-      if (user == null || user.id == null) return;
+      if (user == null || user.id == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final data = await ApiService().getHospitalBloodRequests(user.id!);
       final requests = (data as List).map((e) => BloodRequest.fromJson(e)).toList();
@@ -55,21 +59,31 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
     super.dispose();
   }
 
-  List<BloodRequest> _filterRequests(String? status) {
-    var filtered = _allRequests;
-    if (status != null) {
-      filtered = filtered.where((r) => r.status.toLowerCase() == status.toLowerCase()).toList();
-    }
-    return filtered;
+  List<BloodRequest> _filterRequests(String filterType) {
+    if (filterType == 'all') return _allRequests;
+    
+    return _allRequests.where((r) {
+      final requestedFrom = r.requestedFrom?.toLowerCase();
+      bool isDonorRequest = requestedFrom == null || requestedFrom == 'donor';
+      
+      if (filterType == 'donor') {
+        return isDonorRequest;
+      } else if (filterType == 'bloodbank') {
+        return !isDonorRequest;
+      }
+      return false;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     // Calculate stats
     final allCount = _allRequests.length;
-    final pendingCount = _allRequests.where((r) => r.status == 'pending').length;
-    final fulfilledCount = _allRequests.where((r) => r.status == 'fulfilled').length;
-    final cancelledCount = _allRequests.where((r) => r.status == 'cancelled').length;
+    final donorCount = _allRequests.where((r) {
+      final rf = r.requestedFrom?.toLowerCase();
+      return rf == null || rf == 'donor';
+    }).length;
+    final bloodBankCount = allCount - donorCount;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -81,7 +95,7 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
           preferredSize: const Size.fromHeight(50), 
           child: Column(
             children: [
-              _buildFilterTabs(allCount, pendingCount, fulfilledCount, cancelledCount),
+              _buildFilterTabs(allCount, donorCount, bloodBankCount),
             ],
           ),
         ),
@@ -91,44 +105,51 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
         : TabBarView(
             controller: _tabController,
             children: [
-              _buildRequestsList(null), // All
-              _buildRequestsList('pending'), // Pending
-              _buildRequestsList('fulfilled'), // Completed
-              _buildRequestsList('cancelled'), // Cancelled
+              _buildRequestsList('all'), 
+              _buildRequestsList('donor'), 
+              _buildRequestsList('bloodbank'),
             ],
           ),
     );
   }
 
-  Widget _buildFilterTabs(int all, int pending, int fulfilled, int cancelled) {
+  Widget _buildFilterTabs(int all, int donor, int bloodBank) {
     return TabBar(
       controller: _tabController,
-      isScrollable: true,
+      isScrollable: false,
       indicatorColor: Colors.white,
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white.withOpacity(0.7),
       tabs: [
         Tab(text: 'All ($all)'),
-        Tab(text: 'Pending ($pending)'),
-        Tab(text: 'Completed ($fulfilled)'),
-        Tab(text: 'Cancelled ($cancelled)'),
+        Tab(text: 'To Donors ($donor)'),
+        Tab(text: 'To Blood Banks ($bloodBank)'),
       ],
     );
   }
 
-  Widget _buildRequestsList(String? status) {
-    final requests = _filterRequests(status);
+  Widget _buildRequestsList(String filterType) {
+    final requests = _filterRequests(filterType);
 
-    if (requests.isEmpty) {
-      return const Center(child: Text('No requests found'));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: requests.length,
-      itemBuilder: (context, index) {
-        return _buildRequestCard(requests[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: _fetchRequests,
+      child: requests.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(
+                  height: 500,
+                  child: Center(child: Text('No requests found')),
+                )
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                return _buildRequestCard(requests[index]);
+              },
+            ),
     );
   }
 
@@ -140,7 +161,7 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
       'approved': Colors.blue,
     };
 
-    Color statusColor = statusColors[request.status] ?? Colors.grey;
+    Color statusColor = statusColors[request.status.toLowerCase()] ?? Colors.grey;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -185,6 +206,11 @@ class _HospitalRequestsPageState extends State<HospitalRequestsPage> with Single
                       value: request.status == 'fulfilled' ? 1.0 : (request.status == 'pending' ? 0.3 : 0.0), 
                       backgroundColor: Colors.grey.shade300, 
                       color: statusColor
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'To: ${request.requestedFrom == null || request.requestedFrom!.toLowerCase() == 'donor' ? 'Donor' : 'Blood Bank'}',
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
                     )
                   ],
                 ),

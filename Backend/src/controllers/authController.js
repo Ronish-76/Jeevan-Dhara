@@ -61,6 +61,11 @@ const login = async (req, res) => {
             email: requester.email,
             phone: requester.phone,
             location: requester.location,
+            latitude: requester.latitude,
+            longitude: requester.longitude,
+            hospitalName: requester.hospitalName,
+            hospitalLocation: requester.hospitalLocation,
+            hospitalPhone: requester.hospitalPhone,
             userType: 'requester'
           }
         });
@@ -87,6 +92,8 @@ const login = async (req, res) => {
             email: donor.email,
             phone: donor.phone,
             location: donor.location,
+            latitude: donor.latitude,
+            longitude: donor.longitude,
             age: donor.age,
             gender: donor.gender,
             hospital: donor.hospital,
@@ -198,4 +205,44 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile };
+const updateFCMToken = async (req, res) => {
+  try {
+    console.log("DEBUG: updateFCMToken called. Body:", req.body);
+    const { fcmToken } = req.body;
+    
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        console.log("DEBUG: No token provided in header");
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("DEBUG: Decoded JWT:", decoded);
+    const { userId, userType } = decoded;
+    
+    let updatedUser = null;
+
+    if (userType === 'requester') {
+      updatedUser = await Requester.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+    } else if (userType === 'donor') {
+      updatedUser = await Donor.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+    } else if (userType === 'hospital') {
+      updatedUser = await Hospital.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+    } else if (userType === 'blood_bank') {
+      updatedUser = await BloodBank.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+    }
+    
+    if (updatedUser) {
+        console.log(`DEBUG: Updated FCM token for ${userType} ${userId}. New token: ${updatedUser.fcmToken ? updatedUser.fcmToken.substring(0, 10) + '...' : 'null'}`);
+    } else {
+        console.log(`DEBUG: Failed to find user to update FCM token. UserType: ${userType}, ID: ${userId}`);
+    }
+
+    res.status(200).json({ message: 'FCM token updated successfully' });
+  } catch (error) {
+    console.error("DEBUG: Error updating FCM token:", error);
+    res.status(500).json({ message: 'Failed to update FCM token', error: error.message });
+  }
+};
+
+module.exports = { register, login, getProfile, updateFCMToken };

@@ -17,12 +17,27 @@ class _HospitalProfilePageState extends State<HospitalProfilePage> {
   @override
   void initState() {
     super.initState();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null && user.id != null) {
-      _profileFuture = _fetchProfile(user.id!);
+      setState(() {
+        _profileFuture = _fetchProfile(user.id!);
+      });
     } else {
-      _profileFuture = Future.error('User not logged in');
+      setState(() {
+        _profileFuture = Future.error('User not logged in');
+      });
     }
+  }
+
+  Future<void> _refreshProfile() async {
+    _loadProfile();
+    try {
+      await _profileFuture;
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> _fetchProfile(String id) async {
@@ -53,38 +68,58 @@ class _HospitalProfilePageState extends State<HospitalProfilePage> {
         elevation: 0,
         title: const Text('Hospital Profile'),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data found'));
-          }
+      body: RefreshIndicator(
+        onRefresh: _refreshProfile,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 100,
+                    child: Center(child: Text('Error: ${snapshot.error}')),
+                  ),
+                ],
+              );
+            }
+            if (!snapshot.hasData) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 500,
+                    child: Center(child: Text('No data found')),
+                  ),
+                ],
+              );
+            }
 
-          final profile = snapshot.data!;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _buildProfileHeader(profile),
-                const SizedBox(height: 20),
-                _buildBasicInfoCard(profile),
-                const SizedBox(height: 20),
-                _buildAboutHospitalCard(profile),
-                const SizedBox(height: 20),
-                _buildFacilitiesCard(profile),
-                const SizedBox(height: 30),
-                _buildLogoutButton(),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
+            final profile = snapshot.data!;
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildProfileHeader(profile),
+                  const SizedBox(height: 20),
+                  _buildBasicInfoCard(profile),
+                  const SizedBox(height: 20),
+                  _buildAboutHospitalCard(profile),
+                  const SizedBox(height: 20),
+                  _buildFacilitiesCard(profile),
+                  const SizedBox(height: 30),
+                  _buildLogoutButton(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -96,7 +131,7 @@ class _HospitalProfilePageState extends State<HospitalProfilePage> {
         onPressed: _handleLogout,
         icon: const Icon(Icons.logout, color: Colors.white),
         label: const Text(
-          'LOGOUT',
+          'Logout',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
@@ -172,7 +207,7 @@ class _HospitalProfilePageState extends State<HospitalProfilePage> {
     // Create a list of facilities based on available data
     final facilities = [
       {'name': 'Blood Bank Facility', 'available': hasBloodBank},
-      {'name': '24x7 Emergency Service', 'available': hasEmergency},
+      {'name': 'Emergency Service', 'available': hasEmergency},
       // Add others if backend supports them in future
     ];
 

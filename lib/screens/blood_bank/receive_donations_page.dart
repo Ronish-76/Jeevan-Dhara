@@ -140,20 +140,7 @@ class _ReceiveDonationsPageState extends State<ReceiveDonationsPage> {
       ),
       child: Column(
         children: [
-          ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-            label: const Text('Scan Donor QR Code'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text('OR', style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 8),
+          // Removed scan QR button from here
           
           // Autocomplete Search
           LayoutBuilder(

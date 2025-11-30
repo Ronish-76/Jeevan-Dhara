@@ -30,11 +30,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   http: ^1.2.1
   shared_preferences: ^2.2.3
   provider: ^6.0.0
   url_launcher: ^6.2.5
-  intl: ^0.19.0
+  intl: ^0.20.2
+  google_maps_flutter: ^2.14.0
+  geolocator: ^14.0.2
+  flutter_translate: ^4.1.0
+  flutter_local_notifications: ^17.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -51,6 +57,13 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
+
+# Dependency overrides allow us to force a specific version of a package
+# even if other dependencies specify different versions.
+# This is needed here because flutter_translate depends on an older version of intl
+# than what the Flutter SDK requires.
+dependency_overrides:
+  intl: ^0.20.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -71,11 +84,12 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/i18n/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
-  # For details regarding adding assets from package dependencies, see
+  # For details regarding fonts from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
   # To add custom fonts to your application, add a fonts section here,

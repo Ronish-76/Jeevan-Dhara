@@ -1,11 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/models/blood_request_model.dart';
 import 'package:intl/intl.dart';
+import 'package:jeevandhara/services/api_service.dart';
 
-class HospitalRequestDetailsPage extends StatelessWidget {
+class HospitalRequestDetailsPage extends StatefulWidget {
   final BloodRequest request;
 
   const HospitalRequestDetailsPage({super.key, required this.request});
+
+  @override
+  State<HospitalRequestDetailsPage> createState() => _HospitalRequestDetailsPageState();
+}
+
+class _HospitalRequestDetailsPageState extends State<HospitalRequestDetailsPage> {
+  late BloodRequest request;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    request = widget.request;
+  }
+
+  Future<void> _markAsFulfilled() async {
+    setState(() => _isLoading = true);
+    try {
+      await ApiService().fulfillHospitalBloodRequest(request.id, request.donorId);
+      
+      setState(() {
+        request = request.copyWith(status: 'fulfilled');
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Request marked as fulfilled')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update status: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +62,10 @@ class HospitalRequestDetailsPage extends StatelessWidget {
       default: statusColor = Colors.blue;
     }
 
+    // Button Logic: Only visible for non-completed requests made to donors
+    bool isDonorRequest = request.requestedFrom == null || request.requestedFrom!.toLowerCase() == 'donor';
+    bool canFulfill = isDonorRequest && request.status.toLowerCase() != 'fulfilled' && request.status.toLowerCase() != 'cancelled';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -27,7 +73,9 @@ class HospitalRequestDetailsPage extends StatelessWidget {
         backgroundColor: const Color(0xFFD32F2F),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           children: [
             Container(
@@ -86,6 +134,15 @@ class HospitalRequestDetailsPage extends StatelessWidget {
                   if (request.additionalDetails != null && request.additionalDetails!.isNotEmpty)
                     _buildInfoTile(Icons.notes, 'Notes', request.additionalDetails!),
                   
+                  if (request.status.toLowerCase() == 'accepted' || request.status.toLowerCase() == 'fulfilled') ...[
+                    const Divider(height: 32),
+                    const Text('Donor Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    _buildInfoTile(Icons.person, 'Donor Name', request.donorName ?? 'Unknown'),
+                    if (request.donorId != null)
+                       _buildInfoTile(Icons.badge, 'Donor ID', request.donorId!),
+                  ],
+
                   const Divider(height: 32),
                   
                   const Text('Hospital Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -93,12 +150,28 @@ class HospitalRequestDetailsPage extends StatelessWidget {
                   _buildInfoTile(Icons.local_hospital_outlined, 'Hospital', request.hospitalName.isNotEmpty ? request.hospitalName : 'N/A'),
                   _buildInfoTile(Icons.location_on_outlined, 'Location', request.location.isNotEmpty ? request.location : 'N/A'),
                   _buildInfoTile(Icons.phone_outlined, 'Contact', request.contactNumber.isNotEmpty ? request.contactNumber : 'N/A'),
+                  
+                  const SizedBox(height: 80), // Space for button
                 ],
               ),
             ),
           ],
         ),
       ),
+      bottomNavigationBar: canFulfill 
+        ? Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: _markAsFulfilled,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('MARK AS FULFILLED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ) 
+        : null,
     );
   }
 

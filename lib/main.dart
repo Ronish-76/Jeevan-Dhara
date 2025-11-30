@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jeevandhara/screens/blood_bank/blood_bank_main_screen.dart';
 import 'package:jeevandhara/screens/hospital/hospital_main_screen.dart';
 import 'package:provider/provider.dart';
@@ -8,31 +9,68 @@ import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/auth/login_screen.dart';
 import 'package:jeevandhara/screens/main_screen.dart';
 import 'package:jeevandhara/screens/donor/donor_main_screen.dart';
+import 'package:flutter_translate/flutter_translate.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
-      child: const MyApp(),
-    ),
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  var delegate = await LocalizationDelegate.create(
+    fallbackLocale: 'en',
+    supportedLocales: ['en', 'ne'],
   );
+
+  runApp(LocalizedApp(delegate, const MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Jeevan Dhara',
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+    var localizationDelegate = LocalizedApp.of(context).delegate;
+
+    return LocalizationProvider(
+      state: LocalizationProvider.of(context).state,
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
+        child: MaterialApp(
+          title: 'Jeevan Dhara',
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            localizationDelegate
+          ],
+          supportedLocales: localizationDelegate.supportedLocales,
+          locale: localizationDelegate.currentLocale,
+          theme: ThemeData(
+            primarySwatch: Colors.red,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+          ),
+          home: const SplashScreen(),
+          debugShowCheckedModeBanner: false,
+        ),
       ),
-      home: const SplashScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -48,11 +86,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _initApp();
   }
 
-  Future<void> _checkLoginStatus() async {
-    // Artificial delay for splash screen
+  Future<void> _initApp() async {
     await Future.delayed(const Duration(seconds: 2));
     
     if (!mounted) return;
@@ -85,7 +122,6 @@ class _SplashScreenState extends State<SplashScreen> {
           MaterialPageRoute(builder: (context) => const BloodBankMainScreen()),
         );
       } else {
-        // Fallback to login if user type is unknown
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -98,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,18 +148,18 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 150.0,
             ),
             const SizedBox(height: 24.0),
-            const Text(
-              'Jeevan Dhara',
-              style: TextStyle(
+            Text(
+              translate('app_name'),
+              style: const TextStyle(
                 fontSize: 40.0,
                 fontWeight: FontWeight.bold,
                 color: Colors.red,
               ),
             ),
             const SizedBox(height: 12.0),
-            const Text(
-              'Connecting donors , saving lives',
-              style: TextStyle(
+            Text(
+              translate('app_slogan'),
+              style: const TextStyle(
                 fontSize: 16.0,
                 color: Colors.black54,
               ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:jeevandhara/screens/requester/requester_blood_bank_screen.dart';
-import 'package:jeevandhara/screens/requester/requester_emergency_delivery_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_find_donor_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_post_blood_request_screen.dart';
 import 'package:jeevandhara/screens/requester/requester_my_requests_screen.dart';
@@ -9,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
 import 'package:jeevandhara/services/api_service.dart';
 import 'package:jeevandhara/models/blood_request_model.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 
 class RequesterHomePage extends StatefulWidget {
   const RequesterHomePage({super.key});
@@ -19,7 +19,7 @@ class RequesterHomePage extends StatefulWidget {
 
 class _RequesterHomePageState extends State<RequesterHomePage> {
   
-  void _refreshRequests() {
+  Future<void> _refreshRequests() async {
     setState(() {});
   }
 
@@ -27,15 +27,19 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 10),
-            _buildFeatureGrid(),
-            const SizedBox(height: 20),
-            _buildMyRequests(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: _refreshRequests,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 10),
+              _buildFeatureGrid(),
+              const SizedBox(height: 20),
+              _buildRecentRequests(),
+            ],
+          ),
         ),
       ),
     );
@@ -56,22 +60,22 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Jeevan Dhara',
-            style: TextStyle(
+          Text(
+            translate('app_name'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
-            'Save lives, donate blood',
-            style: TextStyle(color: Color(0xFFF5F5F5), fontSize: 16),
+          Text(
+            translate('save_lives_donate'),
+            style: const TextStyle(color: Color(0xFFF5F5F5), fontSize: 16),
           ),
           const SizedBox(height: 20),
           Text(
-            'Welcome, ${user?.fullName ?? 'User'}',
+            '${translate('welcome')}, ${user?.fullName ?? translate('user')}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -86,79 +90,72 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
   Widget _buildFeatureGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
+      child: Column(
         children: [
-          _buildFeatureCard(
-            title: 'Post Blood Request',
-            subtitle: 'Create urgent request',
-            icon: Icons.add,
-            iconColor: Colors.white,
-            textColor: Colors.white,
-            backgroundColor: const Color(0xFFD32F2F),
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RequesterPostBloodRequestScreen(),
-                ),
-              );
-              _refreshRequests();
-            },
+          // Top Big Card
+          SizedBox(
+            width: double.infinity, // Make it full width
+            child: _buildFeatureCard(
+              title: translate('post_blood_request'),
+              subtitle: translate('create_urgent_request'),
+              icon: Icons.add,
+              iconColor: Colors.white,
+              textColor: Colors.white,
+              backgroundColor: const Color(0xFFD32F2F),
+              height: 130, // Adjusted height to be closer to "nearby blood banks" (default aspect ratio)
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RequesterPostBloodRequestScreen(),
+                  ),
+                );
+                _refreshRequests();
+              },
+            ),
           ),
-          _buildFeatureCard(
-            title: 'Find Donor',
-            subtitle: 'Search nearby donors',
-            icon: Icons.people_outline,
-            iconColor: const Color(0xFFD32F2F),
-            textColor: Colors.black87,
-            backgroundColor: const Color(0xFFFFF5F5),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RequesterFindDonorScreen(),
+          const SizedBox(height: 16),
+          // Bottom Row with Two Cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildFeatureCard(
+                  title: translate('nearby_blood_banks'),
+                  subtitle: translate('locate_blood_banks'),
+                  icon: Icons.home_work_outlined,
+                  iconColor: const Color(0xFFD32F2F),
+                  textColor: Colors.black87,
+                  backgroundColor: const Color(0xFFFFF5F5),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RequesterBloodBankScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          _buildFeatureCard(
-            title: 'Nearby Blood Banks',
-            subtitle: 'Locate blood banks',
-            icon: Icons.home_work_outlined,
-            iconColor: const Color(0xFFD32F2F),
-            textColor: Colors.black87,
-            backgroundColor: const Color(0xFFFFF5F5),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RequesterBloodBankScreen(),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildFeatureCard(
+                  title: translate('find_donor'),
+                  subtitle: translate('search_nearby_donors'),
+                  icon: Icons.people_outline,
+                  iconColor: const Color(0xFFD32F2F),
+                  textColor: Colors.black87,
+                  backgroundColor: const Color(0xFFFFF5F5),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RequesterFindDonorScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          _buildFeatureCard(
-            title: 'Emergency Delivery',
-            subtitle: 'Request fast delivery',
-            icon: Icons.local_shipping_outlined,
-            iconColor: Colors.white,
-            textColor: Colors.white,
-            backgroundColor: const Color(0xFFC62828),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const RequesterEmergencyDeliveryScreen(),
-                ),
-              );
-            },
+              ),
+            ],
           ),
         ],
       ),
@@ -172,11 +169,13 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
     required Color iconColor,
     required Color textColor,
     required Color backgroundColor,
+    double? height,
     VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: height, // Optional specific height
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: backgroundColor,
@@ -214,7 +213,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
     );
   }
 
-  Widget _buildMyRequests() {
+  Widget _buildRecentRequests() {
     final user = Provider.of<AuthProvider>(context).user;
     if (user == null) return const SizedBox.shrink();
 
@@ -226,9 +225,9 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'My Requests',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                translate('recent_requests'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: () async {
@@ -240,9 +239,9 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                   );
                   _refreshRequests();
                 },
-                child: const Text(
-                  'View All',
-                  style: TextStyle(color: Color(0xFFD32F2F)),
+                child: Text(
+                  translate('view_all'),
+                  style: const TextStyle(color: Color(0xFFD32F2F)),
                 ),
               ),
             ],
@@ -258,7 +257,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                 return Text('Error: ${snapshot.error}');
               }
               if (!snapshot.hasData || (snapshot.data as List).isEmpty) {
-                return const Text('No requests found.');
+                return Text(translate('no_requests_found'));
               }
 
               final requests = (snapshot.data as List)
@@ -293,6 +292,14 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
       default:
         return Colors.black;
     }
+  }
+  
+  String _getTranslatedStatus(String status) {
+     try {
+       return translate(status.toLowerCase());
+     } catch (e) {
+       return status.toUpperCase();
+     }
   }
 
   Widget _buildRequestCard(BloodRequest request) {
@@ -331,7 +338,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                         ),
                       ),
                       Text(
-                        '${request.units} Unit${request.units > 1 ? 's' : ''} Required',
+                        '${request.units} ${request.units > 1 ? translate('units_required') : translate('unit_required')}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -383,7 +390,7 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                       border: Border.all(color: _getStatusColor(request.status)),
                     ),
                     child: Text(
-                      request.status.toUpperCase(),
+                      _getTranslatedStatus(request.status),
                       style: TextStyle(
                         color: _getStatusColor(request.status),
                         fontSize: 12,
@@ -404,7 +411,6 @@ class _RequesterHomePageState extends State<RequesterHomePage> {
                   ),
                 ],
               ),
-              // Removed Action Buttons (Delete/Cancel) as per request for Home Page view
             ],
           ),
         ),

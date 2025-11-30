@@ -3,6 +3,9 @@ import 'package:jeevandhara/services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:jeevandhara/providers/auth_provider.dart';
+import 'package:jeevandhara/screens/requester/blood_bank_map_screen.dart'; 
+import 'package:jeevandhara/screens/requester/requester_blood_bank_screen.dart' as requester;
+import 'package:flutter_translate/flutter_translate.dart';
 
 // Data model for Blood Bank (Copied for Donor View)
 class BloodBank {
@@ -11,6 +14,9 @@ class BloodBank {
   final String location;
   final double distance;
   final String phone;
+  final double latitude;
+  final double longitude;
+  // Donors don't need to see stock detailed breakdown usually, but model might have it
   
   BloodBank({
     required this.id,
@@ -18,6 +24,8 @@ class BloodBank {
     required this.location,
     required this.distance,
     required this.phone,
+    this.latitude = 0.0,
+    this.longitude = 0.0,
   });
 
   factory BloodBank.fromJson(Map<String, dynamic> json) {
@@ -27,6 +35,8 @@ class BloodBank {
       location: json['fullAddress'] ?? json['hospitalLocation'] ?? 'Unknown Location',
       distance: 0.0, 
       phone: json['phoneNumber'] ?? json['hospitalPhone'] ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -40,6 +50,7 @@ class DonorBloodBankScreen extends StatefulWidget {
 
 class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
   late Future<List<BloodBank>> _bloodBanksFuture;
+  List<BloodBank> _allBloodBanks = [];
 
   @override
   void initState() {
@@ -51,11 +62,25 @@ class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
     try {
       final data = await ApiService().getBloodBanks();
       final banks = data.map((json) => BloodBank.fromJson(json)).toList();
+      _allBloodBanks = banks;
       return banks;
     } catch (e) {
       debugPrint('Error fetching blood banks: $e');
       return [];
     }
+  }
+
+  requester.BloodBank createRequesterBloodBank(BloodBank b) {
+    return requester.BloodBank(
+      id: b.id,
+      name: b.name,
+      location: b.location,
+      distance: b.distance,
+      phone: b.phone,
+      stock: {}, 
+      latitude: b.latitude,
+      longitude: b.longitude,
+    );
   }
 
   @override
@@ -71,9 +96,9 @@ class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Blood Banks', style: TextStyle(color: Colors.white)),
+                Text(translate('nearby_blood_banks'), style: const TextStyle(color: Colors.white)),
                 Text(
-                  '$count blood banks nearby',
+                  translate('blood_banks_nearby_count', args: {'count': count}),
                   style: const TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
@@ -85,7 +110,7 @@ class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          _buildInfoBanner(),
+          _buildMapSection(),
           Expanded(
             child: FutureBuilder<List<BloodBank>>(
               future: _bloodBanksFuture,
@@ -97,7 +122,7 @@ class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No blood banks found.'));
+                  return Center(child: Text(translate('no_blood_banks_found')));
                 }
 
                 return ListView.builder(
@@ -115,34 +140,59 @@ class _DonorBloodBankScreenState extends State<DonorBloodBankScreen> {
     );
   }
 
-  Widget _buildInfoBanner() {
-    final user = Provider.of<AuthProvider>(context).user;
-    final isEligible = user?.isEligible ?? false;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isEligible ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(isEligible ? Icons.check_circle_outline : Icons.info_outline, 
-               color: isEligible ? Colors.green : Colors.orange, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              isEligible 
-                  ? 'You are eligible to donate. Select a blood bank to schedule.' 
-                  : 'You are currently ineligible to donate due to the waiting period.',
-              style: TextStyle(
-                color: isEligible ? Colors.green.shade800 : Colors.orange.shade800, 
-                fontSize: 12
+  Widget _buildMapSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          if (_allBloodBanks.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BloodBankMapScreen(
+                  bloodBanks: _allBloodBanks.map((b) => 
+                    createRequesterBloodBank(b)
+                  ).toList(),
+                ),
               ),
-            ),
+            );
+          } else {
+             ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(translate('no_blood_banks_map'))),
+            );
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.map, color: Colors.blue),
+              const SizedBox(width: 8),
+              Text(
+                translate('see_in_maps'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -164,10 +214,62 @@ class DonorBloodBankCard extends StatelessWidget {
     }
   }
 
+  requester.BloodBank createRequesterBloodBank(BloodBank b) {
+    return requester.BloodBank(
+      id: b.id,
+      name: b.name,
+      location: b.location,
+      distance: b.distance,
+      phone: b.phone,
+      stock: {}, 
+      latitude: b.latitude,
+      longitude: b.longitude,
+    );
+  }
+
+  Future<void> _openMap(BuildContext context) async {
+    final reqBank = createRequesterBloodBank(bank);
+    
+    if (bank.latitude != 0.0 && bank.longitude != 0.0) {
+       Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BloodBankMapScreen(bloodBanks: [reqBank]),
+          ),
+        );
+    } else {
+      final Uri googleMapsUrl = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(bank.location)}');
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl);
+      } else {
+        if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(translate('could_not_open_maps'))),
+          );
+        }
+      }
+    }
+  }
+  
+  Future<void> _openDirections() async {
+     String query = Uri.encodeComponent(bank.location);
+     if (bank.latitude != 0.0 && bank.longitude != 0.0) {
+       query = '${bank.latitude},${bank.longitude}';
+     }
+     final Uri googleMapsUrl = Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=$query');
+          
+     if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl);
+      } else {
+        throw 'Could not launch maps';
+      }
+  }
+
   void _scheduleDonation(BuildContext context) {
-    // Placeholder for scheduling logic
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Donation scheduled at ${bank.name}')),
+      SnackBar(content: Text(translate('donation_scheduled', args: {'name': bank.name}))),
     );
   }
 
@@ -187,9 +289,8 @@ class DonorBloodBankCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildCardHeader(),
+            _buildCardHeader(context),
             const SizedBox(height: 16),
-            // Removed Stock Grid
             _buildActionButtons(context, isEligible),
           ],
         ),
@@ -197,7 +298,7 @@ class DonorBloodBankCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardHeader() {
+  Widget _buildCardHeader(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -209,7 +310,25 @@ class DonorBloodBankCard extends StatelessWidget {
             children: [
               Text(bank.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
               const SizedBox(height: 4),
-              Text(bank.location, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
+               GestureDetector(
+                onTap: () => _openMap(context),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Color(0xFFD32F2F)),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      child: Text(
+                        bank.location, 
+                        style: const TextStyle(
+                          color: Color(0xFF666666), 
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 4),
               if (bank.phone.isNotEmpty)
                 Text(bank.phone, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
@@ -228,7 +347,7 @@ class DonorBloodBankCard extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: isEligible ? () => _scheduleDonation(context) : null,
             icon: const Icon(Icons.calendar_today, size: 20),
-            label: const Text('SCHEDULE DONATION'),
+            label: Text(translate('schedule_donation').toUpperCase()),
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: const Color(0xFFD32F2F),
@@ -247,7 +366,7 @@ class DonorBloodBankCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: (bank.phone.isNotEmpty) ? () => _makePhoneCall(bank.phone) : null,
                 icon: const Icon(Icons.call, size: 18),
-                label: const Text('Call'),
+                label: Text(translate('call')),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD32F2F),
                   side: const BorderSide(color: Color(0xFFD32F2F)),
@@ -259,9 +378,9 @@ class DonorBloodBankCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {}, // Placeholder for direction
+                onPressed: _openDirections,
                 icon: const Icon(Icons.directions, size: 18),
-                label: const Text('Directions'),
+                label: Text(translate('directions')),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD32F2F),
                   side: const BorderSide(color: Color(0xFFD32F2F)),
