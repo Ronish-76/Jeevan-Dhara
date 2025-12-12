@@ -1,101 +1,156 @@
+# Jeevan Dhara – Blood Donation Management System
 
- # jeevandhara
- # Jeevan Dhara - Blood Donation Management System
+**Jeevan Dhara** is a cross-platform mobile application built with **Flutter**, designed to connect blood donors, requesters, hospitals, and blood banks in real time. The system streamlines blood donation processes, emergency requests, stock management, and donor verification—ensuring faster access to life-saving blood during critical situations.
 
- A new Flutter project.
- **Jeevan Dhara** is a comprehensive blood donation platform designed to bridge the gap between blood donors, hospitals, blood banks, and requesters. It facilitates real-time coordination for blood requests, donations, and inventory management to save lives efficiently.
+---
 
- ## Getting Started
- ## 🚀 Features
+## 📌 Key Features Overview
 
- This project is a starting point for a Flutter application.
- The application caters to four distinct user roles, each with tailored functionalities:
+### **1. Requester (Patients & Families)**
 
- A few resources to get you started if this is your first Flutter project:
- ### 1. **Requester (Patient/Family)**
- - **Post Blood Requests:** Create emergency or scheduled blood requests.
- - **Find Donors:** Search for nearby compatible donors.
- - **Track Status:** Monitor the status of blood requests in real-time.
- - **Notifications:** Receive alerts when a donor accepts a request.
+* Post emergency or scheduled blood requests
+* Search for compatible nearby donors
+* Track request progress in real time
+* Receive instant alerts when a donor accepts the request
 
- - [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
- - [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
- ### 2. **Donor**
- - **Register & Profile:** maintain a donor profile with blood group and health status.
- - **View Requests:** Browse nearby blood requests compatible with your blood type.
- - **Donate:** Accept requests and track donation history.
- - **Eligibility Check:** Automated checks for donation eligibility based on last donation date.
+### **2. Donor**
 
- For help getting started with Flutter development, view the
- [online documentation](https://docs.flutter.dev/), which offers tutorials,
- samples, guidance on mobile development, and a full API reference.
- ### 3. **Hospital**
- - **Inventory Management:** Track internal blood stock levels.
- - **Request Blood:** Place bulk or specific requests to blood banks.
- - **Verify Donors:** Validate donor information and record donations.
- - **Emergency Alerts:** Broadcast emergency requirements to nearby donors and blood banks.
-​
- ### 4. **Blood Bank**
- - **Stock Management:** comprehensive inventory tracking for all blood groups.
- - **Distribute Blood:** Manage blood distribution to hospitals and requesters.
- - **Organize Drives:** Schedule and manage blood donation drives.
- - **Analytics:** View reports on donation trends and inventory status.
-​
- ## 🛠️ Tech Stack
-​
- - **Frontend:** [Flutter](https://flutter.dev/) (Dart) - Cross-platform mobile application.
- - **Backend:** [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/).
- - **Database:** [MongoDB](https://www.mongodb.com/) - NoSQL database for storing user and transaction data.
- - **Authentication:** JWT (JSON Web Tokens) for secure user sessions.
-​
- ## 📱 Getting Started
-​
- ### Prerequisites
- - [Flutter SDK](https://docs.flutter.dev/get-started/install) installed.
- - [Node.js](https://nodejs.org/) and npm installed.
- - [MongoDB](https://www.mongodb.com/) instance (local or Atlas) running.
-​
- ### Installation
-​
- 1.  **Clone the repository:**
-     ```bash
-     git clone <repository-url>
-     cd jeevandhara
-     ```
-​
- 2.  **Setup Backend:**
-     - Navigate to the backend directory:
-       ```bash
-       cd Backend
-       ```
-     - Install dependencies:
-       ```bash
-       npm install
-       ```
-     - Create a `.env` file in the `Backend` folder and configure your environment variables (MongoDB URI, JWT Secret, etc.).
-     - Start the server:
-       ```bash
-       npm start
-       ```
-​
- 3.  **Setup Frontend (Flutter):**
-     - Navigate back to the root directory:
-       ```bash
-       cd ..
-       ```
-     - Install Flutter dependencies:
-       ```bash
-       flutter pub get
-       ```
-     - Run the app:
-       ```bash
-       flutter run
-       ```
-​
- ## 🤝 Contribution
-​
- Contributions are welcome! Please feel free to submit a Pull Request.
-​
- ## 📄 License
-​
- This project is licensed under the MIT License.Read README.md
+* Create and manage donor profile
+* View compatible blood requests
+* Accept donation requests
+* Track donation history
+* Automatic donation eligibility checks
+
+### **3. Hospital**
+
+* Maintain internal blood inventory
+* Request blood from donors or blood banks
+* Verify donor information and confirm donations
+* Broadcast emergency blood shortages
+
+### **4. Blood Bank**
+
+* Full blood stock management
+* Distribute blood to hospitals or requesters
+* Record and organize donation drives
+* Access analytics dashboards for inventory and usage insights
+
+---
+
+## 🛠️ Tech Stack
+
+* **Frontend:** Flutter (Dart)
+* **Backend:** Node.js + Express.js
+* **Database:** MongoDB (Atlas or Local)
+* **API Tunneling for Mobile:** NGROK
+* **Authentication:** JWT (JSON Web Tokens)
+
+---
+
+## 📱 Project Setup Guide
+
+### **Prerequisites**
+
+* Flutter SDK installed
+* Node.js + npm installed
+* MongoDB installed or cloud DB created
+* NGROK installed → [https://ngrok.com/download](https://ngrok.com/download)
+
+---
+
+## 🚀 Installation & Run Instructions
+
+### **1. Clone the Repository**
+
+```bash
+git clone <repository-url>
+cd jeevandhara
+```
+
+### **2. Backend Setup**
+
+```bash
+cd Backend
+npm install
+```
+
+Create a `.env` file inside `/Backend`:
+
+```
+MONGO_URI=your_mongo_db_connection
+JWT_SECRET=your_jwt_secret
+PORT=5000
+```
+
+Start the backend:
+
+```bash
+npm start
+```
+
+---
+
+### **3. Setup NGROK for Mobile App Connectivity**
+
+Open a new terminal and run:
+
+```bash
+ngrok http 5000
+```
+
+Copy the **Forwarding URL** (e.g., `https://abc123.ngrok.io`).
+
+Update it inside your Flutter app (`api_config.dart` or equivalent).
+
+---
+
+### **4. Flutter App Setup**
+
+```bash
+cd ..
+flutter pub get
+flutter run
+```
+
+---
+
+## 📌 Project Structure Overview
+
+```
+JeevanDhara/
+│
+├── Backend/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── utils/
+│   ├── server.js
+│   └── .env
+│
+├── lib/
+│   ├── screens/
+│   ├── widgets/
+│   ├── services/
+│   ├── models/
+│   ├── utils/
+│   └── main.dart
+│
+├── assets/
+│   ├── icons/
+│   └── images/
+│
+└── README.md
+```
+
+---
+
+## 🤝 Contribution
+
+Contributions are welcome!
+Feel free to open issues, suggest improvements, or submit pull requests.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
